@@ -1,0 +1,152 @@
+{
+  "date": "2025/1/21",
+  "dailyTotal": 7200000,
+  "records": [
+    {
+      "task": "Study",
+      "startTime": "10:00:00 AM",
+      "duration": "01:00:00",
+      "durationMs": 3600000,
+      "isLongFocus": true
+    }
+  ],
+  "dailyFocusCount": 1,
+  "moodCounts": {
+    "great": 2,
+    "good": 1,
+    "meh": 1,
+    "bad": 0
+  },
+  "monthlyStats": {
+    "2025-01": {
+      "dailyStats": {
+        "1": {
+          "totalTime": 7200000,
+          "focusCount": 2,
+          "exercise": 1,
+          "study": 2,
+          "sleep": "23:30",
+          "wakeup": "07:30"
+        },
+        "2": {
+          "totalTime": 9000000,
+          "focusCount": 3,
+          "exercise": 2,
+          "study": 1,
+          "sleep": "23:00",
+          "wakeup": "07:00"
+        },
+        "3": {
+          "totalTime": 5400000,
+          "focusCount": 1,
+          "exercise": 1,
+          "study": 3,
+          "sleep": "22:30",
+          "wakeup": "06:30"
+        },
+        "4": {
+          "totalTime": 10800000,
+          "focusCount": 4,
+          "exercise": 2,
+          "study": 2,
+          "sleep": "23:15",
+          "wakeup": "07:15"
+        },
+        "5": {
+          "totalTime": 8100000,
+          "focusCount": 2,
+          "exercise": 1,
+          "study": 2,
+          "sleep": "23:45",
+          "wakeup": "07:45"
+        },
+        "6": {
+          "totalTime": 6300000,
+          "focusCount": 2,
+          "exercise": 0,
+          "study": 1,
+          "sleep": "00:00",
+          "wakeup": "08:00"
+        },
+        "7": {
+          "totalTime": 9900000,
+          "focusCount": 3,
+          "exercise": 2,
+          "study": 3,
+          "sleep": "22:45",
+          "wakeup": "06:45"
+        },
+        "8": {
+          "totalTime": 7500000,
+          "focusCount": 2,
+          "exercise": 1,
+          "study": 2,
+          "sleep": "23:20",
+          "wakeup": "07:20"
+        },
+        "9": {
+          "totalTime": 8400000,
+          "focusCount": 3,
+          "exercise": 1,
+          "study": 2,
+          "sleep": "23:10",
+          "wakeup": "07:10"
+        },
+        "10": {
+          "totalTime": 6900000,
+          "focusCount": 2,
+          "exercise": 2,
+          "study": 1,
+          "sleep": "23:40",
+          "wakeup": "07:40"
+        },
+        "11": {
+          "totalTime": 7800000,
+          "focusCount": 2,
+          "exercise": 1,
+          "study": 2,
+          "sleep": "01:30",
+          "wakeup": "09:30"
+        },
+        "12": {
+          "totalTime": 8700000,
+          "focusCount": 3,
+          "exercise": 2,
+          "study": 2,
+          "sleep": "00:45",
+          "wakeup": "08:45"
+        },
+        "13": {
+          "totalTime": 6600000,
+          "focusCount": 2,
+          "exercise": 1,
+          "study": 1,
+          "sleep": "22:15",
+          "wakeup": "06:15"
+        },
+        "14": {
+          "totalTime": 9300000,
+          "focusCount": 3,
+          "exercise": 2,
+          "study": 3,
+          "sleep": "23:50",
+          "wakeup": "07:50"
+        },
+        "15": {
+          "totalTime": 7200000,
+          "focusCount": 2,
+          "exercise": 1,
+          "study": 2,
+          "sleep": "00:30",
+          "wakeup": "08:30"
+        }
+      }
+    }
+  },
+  "dailyTracking": {
+    "wakeup": "07:30",
+    "sleep": "23:30",
+    "exercise": 1,
+    "study": 2
+  }
+} 

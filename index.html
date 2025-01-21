@@ -173,8 +173,32 @@
         }
 
         @media (max-width: 600px) {
-            .chart-container {
-                height: 400px;
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+            }
+
+            .header h1 {
+                font-size: 2em;
+                margin-bottom: 10px;
+                width: 100%;
+            }
+
+            .mood-buttons {
+                width: 100%;
+                justify-content: center;
+                padding: 10px;
+                gap: 12px;
+            }
+
+            .mood-btn {
+                width: 44px;
+                height: 44px;
+            }
+
+            .header {
+                padding: 25px 20px;
             }
 
             .controls button:active {
@@ -198,11 +222,6 @@
             .controls button {
                 padding: 15px 30px;
                 margin: 8px;
-            }
-
-            .mood-btn {
-                width: 48px;
-                height: 48px;
             }
 
             .controls button,
@@ -287,9 +306,9 @@
 
         .mood-buttons {
             display: flex;
-            gap: 8px;
+            gap: 12px;
             background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
+            padding: 15px;
             border-radius: 15px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
@@ -298,16 +317,17 @@
             background: white;
             border: 2px solid;
             cursor: pointer;
-            padding: 8px;
+            padding: 10px;
             border-radius: 12px;
             transition: all 0.3s;
             position: relative;
-            width: 48px;
-            height: 48px;
+            width: 52px;
+            height: 52px;
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin: 5px;
         }
 
         .mood-btn .material-icons {
@@ -350,14 +370,16 @@
             background-color: #FF4081;
             color: white;
             border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            font-size: 12px;
+            min-width: 20px;
+            height: 20px;
+            font-size: 11px;
+            padding: 0 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             border: 2px solid white;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 2;
         }
 
         .mood-stats {
@@ -388,29 +410,257 @@
             border-radius: 5px;
             font-size: 0.9em;
         }
+
+        /* 移动端特别调整 */
+        @media (max-width: 600px) {
+            .mood-btn {
+                width: 46px;
+                height: 46px;
+                margin: 3px;
+            }
+
+            .mood-count {
+                min-width: 18px;
+                height: 18px;
+                font-size: 10px;
+                top: -6px;
+                right: -6px;
+            }
+
+            .mood-buttons {
+                gap: 8px;
+                padding: 12px;
+            }
+        }
+
+        .title-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .current-datetime {
+            font-size: 1.1em;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        @media (max-width: 600px) {
+            .current-datetime {
+                font-size: 1em;
+            }
+        }
+
+        .tracking-buttons {
+            display: flex;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .track-btn {
+            background: white;
+            border: 2px solid;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 12px;
+            transition: all 0.3s;
+            position: relative;
+            width: 52px;
+            height: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .track-btn .material-icons {
+            font-size: 24px;
+            margin-top: 4px;
+        }
+
+        .track-time, .track-count {
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            min-width: 32px;
+            text-align: center;
+        }
+
+        .track-btn[data-type="wakeup"] {
+            color: #FF9800;
+            border-color: #FF9800;
+            background: #FFF3E0;
+        }
+
+        .track-btn[data-type="sleep"] {
+            color: #673AB7;
+            border-color: #673AB7;
+            background: #EDE7F6;
+        }
+
+        .track-btn[data-type="exercise"] {
+            color: #F44336;
+            border-color: #F44336;
+            background: #FFEBEE;
+        }
+
+        .track-btn[data-type="study"] {
+            color: #2196F3;
+            border-color: #2196F3;
+            background: #E3F2FD;
+        }
+
+        @media (max-width: 600px) {
+            .track-btn {
+                width: 48px;
+                height: 60px;
+            }
+
+            .track-btn .material-icons {
+                font-size: 22px;
+            }
+
+            .track-time, .track-count {
+                font-size: 11px;
+            }
+        }
+
+        .buttons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .tracking-buttons, .mood-buttons {
+            display: flex;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: fit-content;
+        }
+
+        @media (max-width: 600px) {
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .buttons-container {
+                width: 100%;
+            }
+
+            .tracking-buttons, .mood-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .data-backup {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            text-align: center;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .data-backup h3 {
+            color: #6c757d;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+
+        .data-backup button {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .data-backup button:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .data-backup button:active {
+            transform: translateY(0);
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            .data-backup {
+                margin-top: 30px;
+                padding: 15px;
+            }
+
+            .data-backup button {
+                padding: 8px 16px;
+                font-size: 0.9em;
+                margin: 5px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="header-content">
-            <h1><span class="material-icons">timer</span> Focus Timer</h1>
-            <div class="mood-buttons">
-                <button class="mood-btn" data-mood="great">
-                    <span class="material-icons">sentiment_very_satisfied</span>
-                    <span class="mood-count" id="great-count">0</span>
-                </button>
-                <button class="mood-btn" data-mood="good">
-                    <span class="material-icons">sentiment_satisfied</span>
-                    <span class="mood-count" id="good-count">0</span>
-                </button>
-                <button class="mood-btn" data-mood="meh">
-                    <span class="material-icons">sentiment_neutral</span>
-                    <span class="mood-count" id="meh-count">0</span>
-                </button>
-                <button class="mood-btn" data-mood="bad">
-                    <span class="material-icons">sentiment_dissatisfied</span>
-                    <span class="mood-count" id="bad-count">0</span>
-                </button>
+            <div class="title-section">
+                <h1><span class="material-icons">timer</span> Focus Timer</h1>
+                <div class="current-datetime">Loading...</div>
+            </div>
+            <div class="buttons-container">
+                <div class="tracking-buttons">
+                    <button class="track-btn" data-type="wakeup" title="Wake Up">
+                        <span class="material-icons">wb_sunny</span>
+                        <span class="track-time" id="wakeup-time">--:--</span>
+                    </button>
+                    <button class="track-btn" data-type="sleep" title="Sleep">
+                        <span class="material-icons">bedtime</span>
+                        <span class="track-time" id="sleep-time">--:--</span>
+                    </button>
+                    <button class="track-btn" data-type="exercise" title="Exercise">
+                        <span class="material-icons">fitness_center</span>
+                        <span class="track-count" id="exercise-count">0</span>
+                    </button>
+                    <button class="track-btn" data-type="study" title="Study">
+                        <span class="material-icons">school</span>
+                        <span class="track-count" id="study-count">0</span>
+                    </button>
+                </div>
+                <div class="mood-buttons">
+                    <button class="mood-btn" data-mood="great">
+                        <span class="material-icons">sentiment_very_satisfied</span>
+                        <span class="mood-count" id="great-count">0</span>
+                    </button>
+                    <button class="mood-btn" data-mood="good">
+                        <span class="material-icons">sentiment_satisfied</span>
+                        <span class="mood-count" id="good-count">0</span>
+                    </button>
+                    <button class="mood-btn" data-mood="meh">
+                        <span class="material-icons">sentiment_neutral</span>
+                        <span class="mood-count" id="meh-count">0</span>
+                    </button>
+                    <button class="mood-btn" data-mood="bad">
+                        <span class="material-icons">sentiment_dissatisfied</span>
+                        <span class="mood-count" id="bad-count">0</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -453,25 +703,32 @@
         <p id="dailySummary">Total Focus Time: 0 hours 0 minutes</p>
     </div>
 
-    <div class="section-card">
-        <h2><span class="material-icons">backup</span> Data Backup</h2>
-        <div class="data-management">
-            <button onclick="exportData()" class="management-btn">
-                <span class="material-icons">file_download</span>Export Data
-            </button>
-            <label class="management-btn">
-                <span class="material-icons">file_upload</span>Import Data
-                <input type="file" accept=".json" style="display: none" 
-                       onchange="if(this.files[0]) importData(this.files[0])">
-            </label>
-        </div>
+    <!-- 图表容器 -->
+    <div class="chart-container">
+        <canvas id="monthlyChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="sleepChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="heatmapChart"></canvas>
     </div>
 
-    <div class="section-card">
-        <h2><span class="material-icons">bar_chart</span> Monthly Statistics</h2>
-        <div class="chart-container">
-            <canvas id="monthlyChart"></canvas>
+    <!-- 修改数据备份部分的 HTML -->
+    <div class="data-backup">
+        <h3>Data Management</h3>
+        <div class="backup-buttons">
+            <button onclick="exportData()">
+                <span class="material-icons">file_download</span>
+                Export Data
+            </button>
+            <button onclick="document.getElementById('importFile').click()">
+                <span class="material-icons">file_upload</span>
+                Import Data
+            </button>
         </div>
+        <input type="file" id="importFile" accept=".json" style="display: none;" 
+               onchange="if(this.files[0]) importData(this.files[0])">
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

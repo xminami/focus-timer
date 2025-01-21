@@ -1,117 +1,93 @@
-# 专注时间记录器
+# Focus Timer
 
-一个简单但功能完整的网页版专注时间记录工具。帮助你追踪每天的专注时间，记录心情变化，并通过图表直观地展示月度数据。
+A comprehensive web-based focus timer with activity tracking and mood monitoring. Track your focus time, daily activities, sleep schedule, and mood changes.
 
-## 功能特点
+## Features
 
-### 时间记录
-- ⏱️ 精确的计时功能
-- ⏸️ 支持暂停/继续
-- 📝 可添加任务描述
-- ✨ 自动识别有效专注（≥25分钟）
-- 📊 显示每日专注总时间和有效次数
+### Focus Timer
+- ⏱️ Precise timing with pause/resume
+- 📝 Optional task description
+- ✨ Auto-detect effective focus (≥25min)
+- 📊 Daily and monthly statistics
 
-### 心情追踪
-- 😊 四种心情状态选择（很好、好、一般、不好）
-- 📈 记录每日主要心情（点击次数最多的）
-- 🎯 实时更新显示
+### Activity Tracking
+- 🌅 Wake up time tracking
+- 🌙 Sleep time tracking
+- 💪 Exercise tracking with auto-timer
+- 📚 Study tracking with auto-timer
 
-### 数据统计
-- 📅 自动生成月度统计图表
-- 📊 双轴图表显示时间和次数
-- 🎯 直观展示专注效果
+### Mood Monitoring
+- 😊 Four mood states (Great, Good, Meh, Bad)
+- 📈 Daily mood tracking
+- 📊 Monthly mood statistics
 
-### 数据管理
-- 💾 自动保存到本地存储
-- 📤 支持数据导出
-- 📥 支持数据导入
-- 🔄 每日自动重置统计
+### Statistics & Visualization
+- 📊 Monthly focus time chart
+- 😴 Sleep duration analysis
+- 🔥 Activity heatmap
+- 📈 Progress tracking
 
-## 数据更新机制
+### Data Management
+- 💾 Auto-save to localStorage
+- 🔄 Daily auto-reset at midnight
+- 📤 Data export
+- 📥 Data import
 
-### 每日数据
-- 🕛 每天凌晨0点自动重置
-- 🔄 清空当日专注记录
-- 📊 重置心情计数
-- 💾 保留月度统计数据
+## Usage
 
-### 月度统计
-- ⚡ 实时更新，包括：
-  - 结束专注时（记录时间和次数）
-  - 点击心情按钮时（更新当日主要心情）
-  - 加载页面时（更新图表显示）
-- 📈 显示每日主要心情记录
-- 📊 显示月度专注时间和次数趋势
+### Focus Timer
+1. Enter task description (optional)
+2. Click "Start" or use activity buttons
+3. Use Pause/Resume if needed
+4. Click "Stop" to end session
 
-### 数据存储
-- 💾 使用 localStorage 实时保存
-- 📤 支持手动导出数据备份
-- 🔄 每天凌晨0点自动重置当日数据
-- 📊 保留月度统计数据
+### Activity Tracking
+- Click sun icon to record wake-up time
+- Click moon icon to record sleep time
+- Click dumbbell to start exercise timer
+- Click book to start study timer
 
-## 使用方法
+### Mood Recording
+- Click mood icons to record current mood
+- Multiple recordings per day allowed
+- Counts displayed on icons
 
-1. 开始专注
-   - 可选择输入任务描述
-   - 点击"开始"按钮开始计时
-   - 需要时可以暂停/继续
-   - 完成后点击"结束"记录
+## Technical Details
 
-2. 记录心情
-   - 点击右上角对应的心情图标
-   - 可以多次点击记录不同时刻的心情
+### Built With
+- HTML5
+- CSS3
+- JavaScript
+- Chart.js for visualizations
 
-3. 查看统计
-   - 实时查看今日总结
-   - 查看月度统计图表
-   - 导出数据备份
+### Data Storage
+- Uses browser's localStorage
+- Daily data auto-resets at midnight
+- Monthly statistics preserved
+- Backup/restore functionality
 
-## 技术特点
+### Mobile Support
+- Responsive design
+- Touch-friendly interface
+- Mobile-optimized charts
+- Touch feedback effects
 
-- 🎨 现代化UI设计
-- 📱 响应式布局，支持移动设备
-- 💾 使用 localStorage 实现数据持久化
-- 📊 使用 Chart.js 实现数据可视化
-- 🎯 无需后端，纯前端实现
+## Installation
 
-## 本地运行
+1. Clone repository
+2. Open index.html in browser
+3. Start tracking!
 
-1. 克隆仓库到本地
-2. 使用浏览器打开 index.html 文件
-3. 开始使用！
-
-## 浏览器支持
-
+## Browser Support
 - ✅ Chrome
 - ✅ Firefox
 - ✅ Safari
 - ✅ Edge
 
-## 数据说明
+## Data Privacy
+- All data stored locally
+- No server communication
+- Regular backups recommended
 
-- 所有数据存储在浏览器的 localStorage 中
-- 每天零点自动重置当日数据
-- 月度统计数据会保留
-- 建议定期导出数据备份
-
-## 注意事项
-
-- 清除浏览器数据会导致记录丢失
-- 建议定期导出数据备份
-- 不同设备/浏览器之间的数据互相独立
-
-## 未来计划
-
-- [ ] 添加周报表功能
-- [ ] 支持自定义时间段
-- [ ] 添加专注目标设置
-- [ ] 支持数据分析报告
-- [ ] 添加提醒功能
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 许可证
-
+## License
 MIT License 
