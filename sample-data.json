@@ -29,8 +29,8 @@
           "exerciseTime": 3600000,
           "studyTime": 2400000,
           "otherTime": 1200000,
-          "sleep": "23:30",
-          "wakeup": "07:30"
+          "sleep": "00:30",
+          "wakeup": "07:15"
         },
         "2": {
           "totalTime": 9000000,
@@ -40,8 +40,8 @@
           "exerciseTime": 4800000,
           "studyTime": 3000000,
           "otherTime": 1200000,
-          "sleep": "23:00",
-          "wakeup": "07:00"
+          "sleep": "23:45",
+          "wakeup": "06:30"
         },
         "3": {
           "totalTime": 5400000,
@@ -51,8 +51,8 @@
           "exerciseTime": 1800000,
           "studyTime": 2400000,
           "otherTime": 1200000,
-          "sleep": "22:30",
-          "wakeup": "06:30"
+          "sleep": "01:15",
+          "wakeup": "08:45"
         },
         "4": {
           "totalTime": 10800000,
@@ -62,8 +62,8 @@
           "exerciseTime": 3600000,
           "studyTime": 5400000,
           "otherTime": 1800000,
-          "sleep": "23:15",
-          "wakeup": "07:15"
+          "sleep": "23:00",
+          "wakeup": "05:30"
         },
         "5": {
           "totalTime": 8100000,
@@ -73,8 +73,8 @@
           "exerciseTime": 2400000,
           "studyTime": 4500000,
           "otherTime": 1200000,
-          "sleep": "23:45",
-          "wakeup": "07:45"
+          "sleep": "02:00",
+          "wakeup": "09:30"
         },
         "6": {
           "totalTime": 6300000,
@@ -84,8 +84,8 @@
           "exerciseTime": 0,
           "studyTime": 5100000,
           "otherTime": 1200000,
-          "sleep": "00:00",
-          "wakeup": "08:00"
+          "sleep": "00:45",
+          "wakeup": "07:00"
         },
         "7": {
           "totalTime": 9900000,
@@ -95,7 +95,7 @@
           "exerciseTime": 3600000,
           "studyTime": 4800000,
           "otherTime": 1500000,
-          "sleep": "22:45",
+          "sleep": "23:30",
           "wakeup": "06:45"
         },
         "8": {
@@ -106,8 +106,8 @@
           "exerciseTime": 2700000,
           "studyTime": 3600000,
           "otherTime": 1200000,
-          "sleep": "23:20",
-          "wakeup": "07:20"
+          "sleep": "01:30",
+          "wakeup": "08:15"
         },
         "9": {
           "totalTime": 8400000,
@@ -117,8 +117,8 @@
           "exerciseTime": 3000000,
           "studyTime": 4200000,
           "otherTime": 1200000,
-          "sleep": "23:10",
-          "wakeup": "07:10"
+          "sleep": "00:15",
+          "wakeup": "06:00"
         },
         "10": {
           "totalTime": 6900000,
@@ -128,8 +128,8 @@
           "exerciseTime": 3600000,
           "studyTime": 2100000,
           "otherTime": 1200000,
-          "sleep": "23:40",
-          "wakeup": "07:40"
+          "sleep": "02:30",
+          "wakeup": "09:45"
         },
         "11": {
           "totalTime": 7800000,
@@ -139,8 +139,8 @@
           "exerciseTime": 2400000,
           "studyTime": 4200000,
           "otherTime": 1200000,
-          "sleep": "01:30",
-          "wakeup": "09:30"
+          "sleep": "23:15",
+          "wakeup": "05:45"
         },
         "12": {
           "totalTime": 8700000,
@@ -150,8 +150,8 @@
           "exerciseTime": 3600000,
           "studyTime": 3900000,
           "otherTime": 1200000,
-          "sleep": "00:45",
-          "wakeup": "08:45"
+          "sleep": "01:45",
+          "wakeup": "08:30"
         },
         "13": {
           "totalTime": 6600000,
@@ -161,8 +161,8 @@
           "exerciseTime": 2400000,
           "studyTime": 3000000,
           "otherTime": 1200000,
-          "sleep": "22:15",
-          "wakeup": "06:15"
+          "sleep": "00:00",
+          "wakeup": "07:30"
         },
         "14": {
           "totalTime": 9300000,
@@ -172,8 +172,8 @@
           "exerciseTime": 3600000,
           "studyTime": 4500000,
           "otherTime": 1200000,
-          "sleep": "23:50",
-          "wakeup": "07:50"
+          "sleep": "02:15",
+          "wakeup": "09:00"
         },
         "15": {
           "totalTime": 7200000,
@@ -183,8 +183,8 @@
           "exerciseTime": 2400000,
           "studyTime": 3600000,
           "otherTime": 1200000,
-          "sleep": "00:30",
-          "wakeup": "08:30"
+          "sleep": "23:00",
+          "wakeup": "06:15"
         }
       }
     }

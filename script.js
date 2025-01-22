@@ -117,7 +117,8 @@ function addRecord(duration) {
         duration: formatTime(duration),
         durationMs: duration,
         isLongFocus: duration >= 25 * 60 * 1000,
-        type: taskName  // 使用最终的任务名称
+        type: taskName,  // 使用最终的任务名称
+        date: new Date().toLocaleDateString()  // 添加日期字段
     };
 
     records.unshift(newRecord);
@@ -139,12 +140,11 @@ function addRecord(duration) {
 
     // 更新统计
     dailyTotal += duration;
-    updateMonthlyStats(duration);
+    updateMonthlyStats(duration, newRecord);  // 传递记录对象
     updateSummaryCharts();
     saveData();
 
     console.log('Added record:', newRecord);
-    console.log('Current records:', records);
 }
 
 function updateDailySummary() {
@@ -157,6 +157,7 @@ function updateDailySummary() {
 }
 
 function resetTimer(keepTaskName = false) {
+    clearInterval(timerInterval);
     startTime = null;
     startTimeForDisplay = null;
     isPaused = false;
@@ -172,6 +173,9 @@ function resetTimer(keepTaskName = false) {
         taskInput.value = '';
         currentTaskType = null;
     }
+
+    // 保存更新后的状态
+    saveData();
 }
 
 // 加载保存的数据
@@ -199,6 +203,30 @@ function loadSavedData() {
             exercise: 0,
             study: 0
         };
+        
+        // 恢复计时状态
+        if (savedData.timerState) {
+            const state = savedData.timerState;
+            startTime = state.startTime;
+            startTimeForDisplay = state.startTimeForDisplay ? new Date(state.startTimeForDisplay) : null;
+            isPaused = state.isPaused;
+            totalPausedTime = state.totalPausedTime;
+            pauseStartTime = state.pauseStartTime ? new Date(state.pauseStartTime) : null;
+            currentTaskType = state.currentTaskType;
+            taskInput.value = state.taskInput || '';
+
+            // 更新按钮状态
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            stopBtn.disabled = false;
+
+            // 重新启动计时器
+            if (!isPaused) {
+                timerInterval = setInterval(updateTimer, 1000);
+            } else {
+                pauseBtn.textContent = 'Resume';
+            }
+        }
         
         // 更新界面显示
         updateMoodCounts();
@@ -272,8 +300,31 @@ function saveData() {
         dailyFocusCount,
         moodCounts,
         monthlyStats,
-        dailyTracking  // 添加新的跟踪数据
+        dailyTracking,
+        // 添加计时状态
+        timerState: startTime ? {
+            startTime,
+            startTimeForDisplay: startTimeForDisplay?.getTime(),
+            isPaused,
+            totalPausedTime,
+            pauseStartTime: pauseStartTime?.getTime(),
+            currentTaskType,
+            taskInput: taskInput.value
+        } : null
     };
+
+    // 确保当天的记录也保存在月度统计中
+    const now = new Date();
+    const currentMonth = now.toISOString().slice(0, 7);
+    const currentDay = now.getDate().toString();
+    
+    if (monthlyStats[currentMonth]?.dailyStats[currentDay]) {
+        monthlyStats[currentMonth].dailyStats[currentDay].records = records.map(record => ({
+            ...record,
+            date: data.date
+        }));
+    }
+
     localStorage.setItem('timerData', JSON.stringify(data));
 }
 
@@ -323,50 +374,60 @@ function updateMoodCounts() {
 }
 
 // 修改 updateMonthlyStats 函数
-function updateMonthlyStats(duration) {
+function updateMonthlyStats(duration, record) {
     const now = new Date();
-    const monthKey = now.toISOString().slice(0, 7);
-    const dayKey = now.getDate().toString();
+    const currentMonth = now.toISOString().slice(0, 7);
+    const currentDay = now.getDate().toString();
     
-    // 初始化月度数据结构
-    if (!monthlyStats[monthKey]) {
-        monthlyStats[monthKey] = { dailyStats: {} };
-    }
-    if (!monthlyStats[monthKey].dailyStats[dayKey]) {
-        monthlyStats[monthKey].dailyStats[dayKey] = {
-            totalTime: 0,
-            focusCount: 0,
-            exercise: 0,
-            study: 0,
-            exerciseTime: 0,
-            studyTime: 0,
-            otherTime: 0
+    // 确保月度数据结构存在
+    if (!monthlyStats[currentMonth]) {
+        monthlyStats[currentMonth] = {
+            dailyStats: {}
         };
     }
     
-    const dayStats = monthlyStats[monthKey].dailyStats[dayKey];
-    
-    // 更新总时间
-    dayStats.totalTime += duration;
-    
-    // 更新特定类型的时长
-    if (currentTaskType === 'Exercise') {
-        dayStats.exerciseTime = (dayStats.exerciseTime || 0) + duration;
-        dayStats.exercise++;
-    } else if (currentTaskType === 'Study') {
-        dayStats.studyTime = (dayStats.studyTime || 0) + duration;
-        dayStats.study++;
-    } else {
-        dayStats.otherTime = (dayStats.otherTime || 0) + duration;
+    // 确保当日数据结构存在
+    if (!monthlyStats[currentMonth].dailyStats[currentDay]) {
+        monthlyStats[currentMonth].dailyStats[currentDay] = {
+            totalTime: 0,
+            focusCount: 0,
+            exerciseTime: 0,
+            studyTime: 0,
+            otherTime: 0,
+            records: [],
+            sleep: dailyTracking.sleep,
+            wakeup: dailyTracking.wakeup
+        };
     }
     
-    // 更新有效专注次数
+    const dayStats = monthlyStats[currentMonth].dailyStats[currentDay];
+    
+    // 更新统计数据
+    dayStats.totalTime += duration;
     if (duration >= 25 * 60 * 1000) {
         dayStats.focusCount++;
     }
+    
+    // 根据任务类型更新相应的时间
+    if (currentTaskType === 'Exercise') {
+        dayStats.exerciseTime += duration;
+    } else if (currentTaskType === 'Study') {
+        dayStats.studyTime += duration;
+    } else {
+        dayStats.otherTime += duration;
+    }
 
-    console.log('Updated stats for', dayKey, dayStats);  // 调试输出
-    saveData();  // 确保保存数据
+    // 保存记录
+    if (record) {
+        dayStats.records = dayStats.records || [];
+        dayStats.records.push(record);
+    }
+    
+    // 更新睡眠时间
+    dayStats.sleep = dailyTracking.sleep;
+    dayStats.wakeup = dailyTracking.wakeup;
+    
+    saveData();
 }
 
 // 修改 updateMonthlyChart 函数，添加心情统计显示
@@ -646,7 +707,7 @@ function updateSleepChart() {
         return {
             x: day,
             y: [sleepTime - 12 * 60, wakeTime - 12 * 60],
-            duration: duration.toFixed(1)
+            duration: duration
         };
     });
 
@@ -664,7 +725,10 @@ function updateSleepChart() {
                 },
                 {
                     label: 'Sleep Duration',
-                    data: sleepData.filter(d => d.duration !== null),
+                    data: sleepData.filter(d => d.duration !== null).map(d => ({
+                        x: d.x,
+                        y: d.duration
+                    })),
                     type: 'line',
                     yAxisID: 'duration',
                     borderColor: 'rgba(255, 87, 34, 0.8)',
@@ -780,51 +844,144 @@ function timeToMinutes(timeStr) {
 
 // 保留导出/导入功能
 function exportData() {
-    const data = localStorage.getItem('timerData');
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `focus-timer-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+        // 准备导出数据
+        const data = {
+            date: new Date().toLocaleDateString(),
+            dailyTotal,
+            records,
+            dailyFocusCount,
+            moodCounts,
+            monthlyStats,
+            dailyTracking
+        };
+
+        // 导出 JSON
+        const jsonString = JSON.stringify(data, null, 2);
+        const jsonBlob = new Blob([jsonString], { type: 'application/json' });
+        const jsonUrl = URL.createObjectURL(jsonBlob);
+        const jsonLink = document.createElement('a');
+        jsonLink.href = jsonUrl;
+        jsonLink.download = `focus-timer-data-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(jsonLink);
+        jsonLink.click();
+        document.body.removeChild(jsonLink);
+
+        // 准备 CSV 数据
+        let csvContent = '\ufeff';  // 添加 BOM 以支持中文
+        csvContent += 'Date,Task,Start Time,Duration,Is Long Focus,Type\n';
+        
+        // 收集所有记录
+        const allRecords = [];
+        
+        // 从 monthlyStats 中收集所有记录
+        Object.entries(monthlyStats).forEach(([month, monthData]) => {
+            Object.entries(monthData.dailyStats || {}).forEach(([day, dayData]) => {
+                if (dayData.records && Array.isArray(dayData.records)) {
+                    dayData.records.forEach(record => {
+                        allRecords.push({
+                            date: `${month}-${day.padStart(2, '0')}`,
+                            ...record
+                        });
+                    });
+                }
+            });
+        });
+
+        // 添加今天的记录
+        records.forEach(record => {
+            if (!record.date) {
+                record.date = new Date().toLocaleDateString();
+            }
+            allRecords.push(record);
+        });
+
+        console.log('All records to export:', allRecords);  // 调试输出
+
+        // 按日期排序
+        allRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // 写入CSV
+        allRecords.forEach(record => {
+            const row = [
+                record.date,
+                `"${(record.task || '').replace(/"/g, '""')}"`,
+                `"${record.startTime || ''}"`,
+                `"${record.duration || ''}"`,
+                record.isLongFocus || false,
+                `"${record.type || ''}"`
+            ].join(',');
+            csvContent += row + '\n';
+        });
+
+        // 导出 CSV
+        const csvBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+        const csvUrl = URL.createObjectURL(csvBlob);
+        const csvLink = document.createElement('a');
+        csvLink.href = csvUrl;
+        csvLink.download = `focus-timer-records-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(csvLink);
+        csvLink.click();
+        document.body.removeChild(csvLink);
+
+        // 清理 URL 对象
+        setTimeout(() => {
+            URL.revokeObjectURL(jsonUrl);
+            URL.revokeObjectURL(csvUrl);
+        }, 100);
+
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Export failed: ' + error.message);
+    }
 }
 
 function importData(file) {
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            console.log('Reading file:', e.target.result);  // 调试日志
-            const data = JSON.parse(e.target.result);
+            const importedData = JSON.parse(e.target.result);
             
             // 验证数据格式
-            if (!data.date || !data.monthlyStats) {
-                throw new Error('Invalid data structure');
+            if (!importedData.monthlyStats) {
+                throw new Error('Invalid data structure: missing monthlyStats');
             }
 
-            // 保存数据
-            localStorage.setItem('timerData', JSON.stringify(data));
-            console.log('Data saved to localStorage');  // 调试日志
+            // 保存数据到 localStorage，保持原有的月度数据结构
+            const today = new Date().toLocaleDateString();
+            const currentData = {
+                date: today,
+                dailyTotal: 0,
+                records: [],
+                dailyFocusCount: 0,
+                moodCounts: {
+                    great: 0, good: 0, meh: 0, bad: 0
+                },
+                monthlyStats: importedData.monthlyStats,  // 直接使用导入的月度数据
+                dailyTracking: {
+                    wakeup: null, sleep: null,
+                    exercise: 0, study: 0
+                }
+            };
+
+            localStorage.setItem('timerData', JSON.stringify(currentData));
+            console.log('Imported data:', currentData);
 
             // 重新加载数据
             loadSavedData();
             
             // 强制更新图表
-            updateMonthlyChart();
+            setTimeout(() => {
+                updateMonthlyChart();
+                updateSleepChart();
+                updateSummaryCharts();
+            }, 100);
             
-            console.log('Data imported successfully');  // 调试日志
             alert('Data imported successfully!');
         } catch (error) {
-            console.error('Import error:', error);  // 调试日志
+            console.error('Import error:', error);
             alert('Import failed: ' + error.message);
         }
-    };
-    reader.onerror = function(error) {
-        console.error('File reading error:', error);  // 调试日志
-        alert('File reading failed');
     };
     reader.readAsText(file);
 }
