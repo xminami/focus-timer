@@ -97,12 +97,6 @@ function updateTimer() {
 }
 
 function addRecord(duration) {
-    console.log('Adding record with:', {
-        currentTaskType,
-        startTimeForDisplay,
-        duration
-    });
-
     const taskName = currentTaskType || 'Unnamed Task';
     const startTimeString = startTimeForDisplay ? 
         startTimeForDisplay.toLocaleTimeString() : 
@@ -114,10 +108,10 @@ function addRecord(duration) {
         startTime: startTimeString,
         duration: formatTime(duration),
         durationMs: duration,
-        isLongFocus: duration >= 25 * 60 * 1000
+        isLongFocus: duration >= 25 * 60 * 1000,
+        type: currentTaskType || 'Other'  // 确保记录任务类型
     };
 
-    // 添加到记录数组的开头
     records.unshift(newRecord);
 
     // 添加到表格的顶部
@@ -138,7 +132,7 @@ function addRecord(duration) {
     // 更新统计
     dailyTotal += duration;
     updateDailySummary();
-    updateMonthlyStats(duration);
+    updateMonthlyStats(duration);  // 传递任务类型
     saveData();
 
     console.log('Added record:', newRecord);
@@ -318,40 +312,48 @@ function updateMoodCounts() {
 // 修改 updateMonthlyStats 函数
 function updateMonthlyStats(duration) {
     const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7);  // 格式: YYYY-MM
-    const currentDay = now.getDate().toString();
-
-    // 初始化月度统计数据
-    if (!monthlyStats[currentMonth]) {
-        monthlyStats[currentMonth] = {
-            dailyStats: {}
-        };
+    const monthKey = now.toISOString().slice(0, 7);
+    const dayKey = now.getDate().toString();
+    
+    // 初始化月度数据结构
+    if (!monthlyStats[monthKey]) {
+        monthlyStats[monthKey] = { dailyStats: {} };
     }
-
-    // 初始化当天的统计数据
-    if (!monthlyStats[currentMonth].dailyStats[currentDay]) {
-        monthlyStats[currentMonth].dailyStats[currentDay] = {
+    if (!monthlyStats[monthKey].dailyStats[dayKey]) {
+        monthlyStats[monthKey].dailyStats[dayKey] = {
             totalTime: 0,
             focusCount: 0,
-            exercise: dailyTracking.exercise,
-            study: dailyTracking.study,
-            sleep: dailyTracking.sleep,
-            wakeup: dailyTracking.wakeup
+            exercise: 0,
+            study: 0,
+            exerciseTime: 0,
+            studyTime: 0,
+            otherTime: 0
         };
     }
-
-    // 更新统计数据
-    const dayStats = monthlyStats[currentMonth].dailyStats[currentDay];
+    
+    const dayStats = monthlyStats[monthKey].dailyStats[dayKey];
+    
+    // 更新总时间
     dayStats.totalTime += duration;
+    
+    // 更新特定类型的时长
+    if (currentTaskType === 'Exercise') {
+        dayStats.exerciseTime = (dayStats.exerciseTime || 0) + duration;
+        dayStats.exercise++;
+    } else if (currentTaskType === 'Study') {
+        dayStats.studyTime = (dayStats.studyTime || 0) + duration;
+        dayStats.study++;
+    } else {
+        dayStats.otherTime = (dayStats.otherTime || 0) + duration;
+    }
+    
+    // 更新有效专注次数
     if (duration >= 25 * 60 * 1000) {
         dayStats.focusCount++;
     }
-    dayStats.exercise = dailyTracking.exercise;
-    dayStats.study = dailyTracking.study;
-    dayStats.sleep = dailyTracking.sleep;
-    dayStats.wakeup = dailyTracking.wakeup;
 
-    console.log('Updated monthly stats:', monthlyStats);  // 调试输出
+    console.log('Updated stats for', dayKey, dayStats);  // 调试输出
+    saveData();  // 确保保存数据
 }
 
 // 修改 updateMonthlyChart 函数，添加心情统计显示
@@ -380,15 +382,32 @@ function updateMonthlyChart() {
         const monthData = monthlyStats[currentMonth] || { dailyStats: {} };
         console.log('Month data:', monthData);  // 调试输出
         
-        const days = Array.from({ length: 31 }, (_, i) => i + 1);
-        const timeData = days.map(day => {
-            const dayStats = monthData.dailyStats[day.toString()] || { totalTime: 0 };
-            return Math.round(dayStats.totalTime / (1000 * 60 * 60) * 10) / 10; // 转换为小时，保留一位小数
+        // 获取当月天数
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+        
+        // 获取每种类型的专注时间数据（小时）
+        const exerciseData = days.map(day => {
+            const dayStats = monthData.dailyStats[day.toString()] || {};
+            const time = dayStats.exerciseTime || 0;
+            return time > 0 ? time / (1000 * 60 * 60) : 0;
         });
         
+        const studyData = days.map(day => {
+            const dayStats = monthData.dailyStats[day.toString()] || {};
+            const time = dayStats.studyTime || 0;
+            return time > 0 ? time / (1000 * 60 * 60) : 0;
+        });
+        
+        const otherData = days.map(day => {
+            const dayStats = monthData.dailyStats[day.toString()] || {};
+            const time = dayStats.otherTime || 0;
+            return time > 0 ? time / (1000 * 60 * 60) : 0;
+        });
+
         const focusData = days.map(day => {
-            const dayStats = monthData.dailyStats[day.toString()] || { focusCount: 0 };
-            return dayStats.focusCount;
+            const dayStats = monthData.dailyStats[day.toString()] || {};
+            return dayStats.focusCount || 0;
         });
 
         window.monthlyChart = new Chart(ctx, {
@@ -397,19 +416,37 @@ function updateMonthlyChart() {
                 labels: days,
                 datasets: [
                     {
-                        label: 'Focus Time (hours)',
-                        data: timeData,
-                        backgroundColor: 'rgba(33, 150, 243, 0.5)',
-                        borderColor: 'rgba(33, 150, 243, 1)',
+                        label: 'Exercise',
+                        data: exerciseData,
+                        backgroundColor: 'rgba(255, 145, 85, 0.7)',  // 温暖的橙色
+                        borderColor: 'rgba(255, 145, 85, 1)',
                         borderWidth: 1,
-                        yAxisID: 'y'
+                        stack: 'Stack 0'
+                    },
+                    {
+                        label: 'Study',
+                        data: studyData,
+                        backgroundColor: 'rgba(100, 181, 246, 0.7)',  // 清爽的蓝色
+                        borderColor: 'rgba(100, 181, 246, 1)',
+                        borderWidth: 1,
+                        stack: 'Stack 0'
+                    },
+                    {
+                        label: 'Other Focus',
+                        data: otherData,
+                        backgroundColor: 'rgba(156, 204, 101, 0.7)',  // 柔和的绿色
+                        borderColor: 'rgba(156, 204, 101, 1)',
+                        borderWidth: 1,
+                        stack: 'Stack 0'
                     },
                     {
                         label: 'Effective Sessions',
                         data: focusData,
-                        backgroundColor: 'rgba(76, 175, 80, 0.5)',
-                        borderColor: 'rgba(76, 175, 80, 1)',
-                        borderWidth: 1,
+                        type: 'line',
+                        backgroundColor: 'rgba(171, 71, 188, 0.2)',  // 淡紫色
+                        borderColor: 'rgba(171, 71, 188, 1)',
+                        borderWidth: 2,
+                        fill: false,
                         yAxisID: 'y1'
                     }
                 ]
@@ -420,29 +457,36 @@ function updateMonthlyChart() {
                 scales: {
                     x: {
                         title: {
+                            display: true,
                             text: 'Date'
+                        },
+                        ticks: {
+                            stepSize: 1
                         }
                     },
                     y: {
                         type: 'linear',
                         position: 'left',
+                        stacked: true,
                         title: {
+                            display: true,
                             text: 'Focus Time (hours)'
                         },
-                        min: 0,  // 设置最小值
+                        min: 0,
                         ticks: {
-                            stepSize: 1  // 设置步长为1小时
+                            callback: value => value.toFixed(1) + 'h'
                         }
                     },
                     y1: {
                         type: 'linear',
                         position: 'right',
                         title: {
+                            display: true,
                             text: 'Effective Sessions'
                         },
-                        min: 0,  // 设置最小值
+                        min: 0,
                         ticks: {
-                            stepSize: 1  // 设置步长为1次
+                            stepSize: 1
                         },
                         grid: {
                             drawOnChartArea: false
@@ -451,7 +495,18 @@ function updateMonthlyChart() {
                 },
                 plugins: {
                     title: {
+                        display: true,
                         text: 'Monthly Statistics'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                if (context.dataset.type === 'line') {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
+                                return `${context.dataset.label}: ${context.raw.toFixed(1)}h`;
+                            }
+                        }
                     }
                 }
             }
@@ -494,7 +549,6 @@ function updateMonthlyChart() {
 
     // 更新其他图表
     updateSleepChart();
-    updateHeatmap();
 }
 
 // 更新睡眠时间图表
@@ -559,7 +613,7 @@ function updateSleepChart() {
                 },
                 {
                     label: 'Sleep Duration',
-                    data: sleepData.filter(d => d.duration !== null),  // 只显示有睡眠数据的时长
+                    data: sleepData.filter(d => d.duration !== null),
                     type: 'line',
                     yAxisID: 'duration',
                     borderColor: 'rgba(255, 87, 34, 0.8)',
@@ -604,15 +658,18 @@ function updateSleepChart() {
                 },
                 x: {
                     type: 'linear',
-                    min: 0.5,
-                    max: daysInMonth + 0.5,
+                    min: 1,
+                    max: daysInMonth,
                     title: {
                         display: true,
                         text: 'Date'
                     },
                     ticks: {
                         stepSize: 1,
-                        callback: value => `${value}`
+                        callback: value => Math.floor(value)  // 确保只显示整数
+                    },
+                    grid: {
+                        offset: false  // 移除偏移
                     }
                 }
             },
@@ -636,99 +693,6 @@ function updateSleepChart() {
                             const endHour = Math.floor((end + 12 * 60) / 60) % 24;
                             const endMin = (end + 12 * 60) % 60;
                             return `${startHour.toString().padStart(2, '0')}:${startMin.toString().padStart(2, '0')} - ${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
-
-// 更新活动热力图
-function updateHeatmap() {
-    const ctx = document.getElementById('heatmapChart');
-    if (!ctx) return;
-
-    if (window.heatmapChart instanceof Chart) {
-        window.heatmapChart.destroy();
-    }
-
-    const now = new Date(localStorage.getItem('timerData') ? JSON.parse(localStorage.getItem('timerData')).date : new Date());
-    const currentMonth = now.toISOString().slice(0, 7);
-    const monthData = monthlyStats[currentMonth] || { dailyStats: {} };
-    
-    const days = Array.from({ length: 31 }, (_, i) => i + 1);
-    const exerciseData = days.map(day => {
-        const dayStats = monthData.dailyStats[day.toString()] || {};
-        return dayStats.exercise || 0;
-    });
-    const studyData = days.map(day => {
-        const dayStats = monthData.dailyStats[day.toString()] || {};
-        return dayStats.study || 0;
-    });
-    const focusData = days.map(day => {
-        const dayStats = monthData.dailyStats[day.toString()] || {};
-        return dayStats.focusCount || 0;
-    });
-
-    window.heatmapChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: days,
-            datasets: [
-                {
-                    label: 'Exercise',
-                    data: exerciseData,
-                    backgroundColor: 'rgba(244, 67, 54, 0.5)',
-                    borderColor: 'rgba(244, 67, 54, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Study',
-                    data: studyData,
-                    backgroundColor: 'rgba(33, 150, 243, 0.5)',
-                    borderColor: 'rgba(33, 150, 243, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Focus Sessions',
-                    data: focusData,
-                    backgroundColor: 'rgba(76, 175, 80, 0.5)',
-                    borderColor: 'rgba(76, 175, 80, 1)',
-                    borderWidth: 1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Count'
-                    },
-                    ticks: {
-                        stepSize: 1
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Date'
-                    }
-                }
-            },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Daily Activities'
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `${context.dataset.label}: ${context.raw} times`;
                         }
                     }
                 }
