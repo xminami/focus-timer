@@ -24,13 +24,16 @@ A comprehensive web-based focus timer with activity tracking and mood monitoring
 ### Statistics & Visualization
 - 📊 Monthly focus time chart
 - 😴 Sleep duration analysis
-- 🔥 Activity heatmap
 - 📈 Progress tracking
+- 🎯 Daily/Weekly/Monthly summary
+- 📅 Weekend highlighting in charts
 
 ### Data Management
 - 💾 Auto-save to localStorage
 - 🔄 Daily auto-reset at midnight
 - 📤 Data export
+- JSON backup
+- CSV for analysis
 - 📥 Data import
 
 ## Usage
@@ -40,6 +43,7 @@ A comprehensive web-based focus timer with activity tracking and mood monitoring
 2. Click "Start" or use activity buttons
 3. Use Pause/Resume if needed
 4. Click "Stop" to end session
+5. Can modify task name before stopping
 
 ### Activity Tracking
 - Click sun icon to record wake-up time
@@ -51,6 +55,12 @@ A comprehensive web-based focus timer with activity tracking and mood monitoring
 - Click mood icons to record current mood
 - Multiple recordings per day allowed
 - Counts displayed on icons
+
+### Summary View
+- Today's focus time and sessions
+- This week's statistics
+- This month's overview
+- Color-coded for easy reading
 
 ## Technical Details
 

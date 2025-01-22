@@ -74,7 +74,14 @@ function stopTimer() {
     if (startTime) {
         const duration = Date.now() - startTime;
         clearInterval(timerInterval);
-        const currentTask = currentTaskType;  // 保存当前任务名称
+        
+        // 检查是否有新输入的任务名称
+        const inputTask = taskInput.value.trim();
+        if (inputTask && (!currentTaskType || currentTaskType === 'Unnamed Task')) {
+            currentTaskType = inputTask;
+        }
+        
+        const currentTask = currentTaskType || 'Unnamed Task';  // 保存当前任务名称
         resetTimer(true);  // 重置时保留任务名称
         addRecord(duration);  // 记录数据
         currentTaskType = null;  // 最后再清除任务名称
@@ -97,7 +104,8 @@ function updateTimer() {
 }
 
 function addRecord(duration) {
-    const taskName = currentTaskType || 'Unnamed Task';
+    // 再次检查任务输入
+    const taskName = currentTaskType || taskInput.value.trim() || 'Unnamed Task';
     const startTimeString = startTimeForDisplay ? 
         startTimeForDisplay.toLocaleTimeString() : 
         new Date(Date.now() - duration).toLocaleTimeString();
@@ -109,7 +117,7 @@ function addRecord(duration) {
         duration: formatTime(duration),
         durationMs: duration,
         isLongFocus: duration >= 25 * 60 * 1000,
-        type: currentTaskType || 'Other'  // 确保记录任务类型
+        type: taskName  // 使用最终的任务名称
     };
 
     records.unshift(newRecord);
@@ -131,8 +139,8 @@ function addRecord(duration) {
 
     // 更新统计
     dailyTotal += duration;
-    updateDailySummary();
-    updateMonthlyStats(duration);  // 传递任务类型
+    updateMonthlyStats(duration);
+    updateSummaryCharts();
     saveData();
 
     console.log('Added record:', newRecord);
@@ -140,9 +148,12 @@ function addRecord(duration) {
 }
 
 function updateDailySummary() {
+    // 不再需要更新文本显示，因为我们现在使用图表来显示统计信息
     const hours = Math.floor(dailyTotal / (1000 * 60 * 60));
     const minutes = Math.floor((dailyTotal % (1000 * 60 * 60)) / (1000 * 60));
-    dailySummary.textContent = `Total Focus Time: ${hours}h ${minutes}m | Effective Focus Sessions (≥25min): ${dailyFocusCount}`;
+    
+    // 直接更新今日图表
+    updateTodayChart();
 }
 
 function resetTimer(keepTaskName = false) {
@@ -191,7 +202,7 @@ function loadSavedData() {
         
         // 更新界面显示
         updateMoodCounts();
-        updateDailySummary();
+        updateSummaryCharts();
         
         // 更新记录表格
         recordsTable.innerHTML = '';
@@ -239,7 +250,7 @@ function loadSavedData() {
         
         // 更新界面显示
         updateMoodCounts();
-        updateDailySummary();
+        updateSummaryCharts();
         recordsTable.innerHTML = '';
     }
 
@@ -248,6 +259,8 @@ function loadSavedData() {
     setTimeout(() => {
         updateMonthlyChart();
     }, 100);
+    updateSleepChart();
+    updateSummaryCharts();
 }
 
 // 保存数据到本地存储
@@ -382,10 +395,19 @@ function updateMonthlyChart() {
         const monthData = monthlyStats[currentMonth] || { dailyStats: {} };
         console.log('Month data:', monthData);  // 调试输出
         
+        // 获取当月第一天的日期
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        
         // 获取当月天数
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
         
+        // 获取每天是星期几
+        const weekdays = days.map(day => {
+            const date = new Date(now.getFullYear(), now.getMonth(), day);
+            return date.getDay(); // 0 是周日，1-6 是周一到周六
+        });
+
         // 获取每种类型的专注时间数据（小时）
         const exerciseData = days.map(day => {
             const dayStats = monthData.dailyStats[day.toString()] || {};
@@ -461,7 +483,30 @@ function updateMonthlyChart() {
                             text: 'Date'
                         },
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: function(context) {
+                                if (!context || typeof context.index === 'undefined') return 'rgba(0, 0, 0, 0.8)';
+                                const weekday = weekdays[context.index];
+                                return (weekday === 0 || weekday === 6) ? 
+                                    'rgba(255, 145, 85, 1)' : 
+                                    'rgba(0, 0, 0, 0.8)';
+                            },
+                            font: function(context) {
+                                if (!context || typeof context.index === 'undefined') return { weight: 'normal' };
+                                const weekday = weekdays[context.index];
+                                return {
+                                    weight: (weekday === 0 || weekday === 6) ? 'bold' : 'normal'
+                                };
+                            }
+                        },
+                        grid: {
+                            color: function(context) {
+                                if (!context || typeof context.index === 'undefined') return 'rgba(0, 0, 0, 0.1)';
+                                const weekday = weekdays[context.index];
+                                return (weekday === 0 || weekday === 6) ? 
+                                    'rgba(255, 145, 85, 0.1)' : 
+                                    'rgba(0, 0, 0, 0.1)';
+                            }
                         }
                     },
                     y: {
@@ -568,6 +613,12 @@ function updateSleepChart() {
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     
+    // 获取每天是星期几
+    const weekdays = days.map(day => {
+        const date = new Date(now.getFullYear(), now.getMonth(), day);
+        return date.getDay(); // 0 是周日，1-6 是周一到周六
+    });
+
     // 处理所有日期的数据，包括没有记录的日期
     const sleepData = days.map(day => {
         const dayStats = monthData.dailyStats[day.toString()] || {};
@@ -666,10 +717,30 @@ function updateSleepChart() {
                     },
                     ticks: {
                         stepSize: 1,
-                        callback: value => Math.floor(value)  // 确保只显示整数
+                        callback: value => Math.floor(value),
+                        color: function(context) {
+                            if (!context || typeof context.index === 'undefined') return 'rgba(0, 0, 0, 0.8)';
+                            const weekday = weekdays[context.index];
+                            return (weekday === 0 || weekday === 6) ? 
+                                'rgba(255, 145, 85, 1)' : 
+                                'rgba(0, 0, 0, 0.8)';
+                        },
+                        font: function(context) {
+                            if (!context || typeof context.index === 'undefined') return { weight: 'normal' };
+                            const weekday = weekdays[context.index];
+                            return {
+                                weight: (weekday === 0 || weekday === 6) ? 'bold' : 'normal'
+                            };
+                        }
                     },
                     grid: {
-                        offset: false  // 移除偏移
+                        color: function(context) {
+                            if (!context || typeof context.index === 'undefined') return 'rgba(0, 0, 0, 0.1)';
+                            const weekday = weekdays[context.index];
+                            return (weekday === 0 || weekday === 6) ? 
+                                'rgba(255, 145, 85, 0.1)' : 
+                                'rgba(0, 0, 0, 0.1)';
+                        }
                     }
                 }
             },
@@ -779,8 +850,8 @@ function setupAutoReset() {
         
         // 更新显示
         updateMoodCounts();
-        updateDailySummary();
-        recordsTable.innerHTML = '';  // 清空今日记录表格
+        updateSummaryCharts();
+        recordsTable.innerHTML = '';
         
         // 设置下一天的定时器
         setupAutoReset();
@@ -791,15 +862,20 @@ function setupAutoReset() {
 function updateDateTime() {
     const now = new Date();
     const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
+        weekday: 'short',    // 'long' -> 'short'
+        month: 'short',      // 'long' -> 'short'
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit'
+        hour12: false        // 使用24小时制
     };
-    currentDatetime.textContent = now.toLocaleDateString('en-US', options);
+    currentDatetime.textContent = now.toLocaleDateString('en-US', options) + 
+                                 ' ' + 
+                                 now.toLocaleTimeString('en-US', {
+                                     hour: '2-digit',
+                                     minute: '2-digit',
+                                     hour12: false
+                                 });
 }
 
 // 修改 setupTrackingButtons 函数
@@ -883,3 +959,48 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDateTime();  // 立即执行一次
     setInterval(updateDateTime, 1000);  // 每秒更新
 });
+
+function updateSummaryCharts() {
+    // 更新今日数据
+    const todayHours = Math.floor(dailyTotal / (1000 * 60 * 60));
+    const todayMinutes = Math.floor((dailyTotal % (1000 * 60 * 60)) / (1000 * 60));
+    document.getElementById('today-focus').textContent = `${todayHours}h ${todayMinutes}m`;
+    document.getElementById('today-sessions').textContent = dailyFocusCount;
+
+    // 获取本周数据
+    const now = new Date();
+    const currentMonth = now.toISOString().slice(0, 7);
+    const monthData = monthlyStats[currentMonth]?.dailyStats || {};
+    
+    // 计算本周数据
+    const today = now.getDate();
+    const dayOfWeek = now.getDay();
+    const weekStart = today - dayOfWeek;
+    let weekFocusTime = 0;
+    let weekSessions = 0;
+    
+    for (let i = 0; i < 7; i++) {
+        const day = weekStart + i;
+        const dayStats = monthData[day] || {};
+        weekFocusTime += dayStats.totalTime || 0;
+        weekSessions += dayStats.focusCount || 0;
+    }
+    
+    const weekHours = Math.floor(weekFocusTime / (1000 * 60 * 60));
+    const weekMinutes = Math.floor((weekFocusTime % (1000 * 60 * 60)) / (1000 * 60));
+    document.getElementById('week-focus').textContent = `${weekHours}h ${weekMinutes}m`;
+    document.getElementById('week-sessions').textContent = weekSessions;
+
+    // 计算月度总计
+    let monthFocusTime = 0;
+    let monthSessions = 0;
+    Object.values(monthData).forEach(day => {
+        monthFocusTime += day.totalTime || 0;
+        monthSessions += day.focusCount || 0;
+    });
+    
+    const monthHours = Math.floor(monthFocusTime / (1000 * 60 * 60));
+    const monthMinutes = Math.floor((monthFocusTime % (1000 * 60 * 60)) / (1000 * 60));
+    document.getElementById('month-focus').textContent = `${monthHours}h ${monthMinutes}m`;
+    document.getElementById('month-sessions').textContent = monthSessions;
+}
