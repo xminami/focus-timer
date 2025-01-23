@@ -59,21 +59,38 @@ function startTimer() {
 
 function pauseTimer() {
     if (!isPaused) {
+        // 暂停计时器
         clearInterval(timerInterval);
         isPaused = true;
+        pauseStartTime = Date.now();  // 记录暂停开始时间
         pauseBtn.textContent = 'Resume';
+        pauseBtn.classList.remove('pause-btn');
+        pauseBtn.classList.add('resume-btn');
     } else {
-        // 恢复计时，保持原始开始时间不变
+        // 恢复计时
+        if (pauseStartTime) {
+            totalPausedTime += Date.now() - pauseStartTime;  // 累加暂停时间
+            pauseStartTime = null;  // 清除暂停开始时间
+        }
         timerInterval = setInterval(updateTimer, 1000);
         isPaused = false;
         pauseBtn.textContent = 'Pause';
+        pauseBtn.classList.remove('resume-btn');
+        pauseBtn.classList.add('pause-btn');
     }
+    // 保存状态
+    saveData();
 }
 
 function stopTimer() {
     if (startTime) {
-        const duration = Date.now() - startTime;
+        // 计算实际持续时间
+        const currentTime = Date.now();
+        const duration = currentTime - startTime - totalPausedTime;
+        
+        // 清除计时器
         clearInterval(timerInterval);
+        timerInterval = null;
         
         // 检查是否有新输入的任务名称
         const inputTask = taskInput.value.trim();
@@ -89,18 +106,49 @@ function stopTimer() {
     }
 }
 
+let lastSaveTime = 0;
+const SAVE_INTERVAL = 1000; // 每秒保存一次
+
 function updateTimer() {
-    let currentTime;
-    if (isPaused) {
-        currentTime = pauseStartTime - startTime - totalPausedTime;
-    } else {
-        if (pauseStartTime) {
-            totalPausedTime += Date.now() - pauseStartTime;
-            pauseStartTime = null;
+    try {
+        if (!startTime) return;
+
+        const now = Date.now();
+        let currentTime;
+
+        if (isPaused) {
+            // 如果是暂停状态，使用暂停时的时间
+            currentTime = pauseStartTime - startTime - totalPausedTime;
+        } else {
+            // 如果是运行状态
+            if (pauseStartTime) {
+                // 如果有未处理的暂停时间，先处理
+                totalPausedTime += now - pauseStartTime;
+                pauseStartTime = null;
+            }
+            currentTime = now - startTime - totalPausedTime;
         }
-        currentTime = Date.now() - startTime - totalPausedTime;
+        
+        currentTime = Math.max(0, currentTime);
+        timer.textContent = formatTime(currentTime);
+
+        // 限制保存频率
+        if (now - lastSaveTime >= SAVE_INTERVAL) {
+            saveData();
+            lastSaveTime = now;
+        }
+
+        // 调试输出
+        console.log('Timer state:', {
+            isPaused,
+            currentTime: formatTime(currentTime),
+            totalPausedTime: formatTime(totalPausedTime),
+            pauseStartTime: pauseStartTime ? new Date(pauseStartTime).toISOString() : null
+        });
+    } catch (error) {
+        console.error('Error in updateTimer:', error);
+        resetTimer();
     }
-    timer.textContent = formatTime(currentTime);
 }
 
 function addRecord(duration) {
@@ -168,6 +216,8 @@ function resetTimer(keepTaskName = false) {
     pauseBtn.disabled = true;
     stopBtn.disabled = true;
     pauseBtn.textContent = 'Pause';
+    pauseBtn.classList.remove('resume-btn');
+    pauseBtn.classList.add('pause-btn');
     
     if (!keepTaskName) {
         taskInput.value = '';
@@ -178,32 +228,63 @@ function resetTimer(keepTaskName = false) {
     saveData();
 }
 
-// 加载保存的数据
+function saveData() {
+    try {
+        // 如果计时器正在运行，保存完整状态
+        const timerState = startTime ? {
+            startTime: Number(startTime),
+            startTimeForDisplay: startTimeForDisplay?.getTime(),
+            isPaused,
+            totalPausedTime: Number(totalPausedTime),
+            pauseStartTime: pauseStartTime?.getTime(),
+            currentTaskType,
+            taskInput: taskInput.value,
+            timerInterval: timerInterval ? true : false
+        } : null;
+
+        const data = {
+            date: new Date().toISOString().slice(0, 10),
+            dailyTotal,
+            records,
+            dailyFocusCount,
+            moodCounts,
+            monthlyStats,
+            dailyTracking,
+            timerState
+        };
+
+        // 保存到 localStorage
+        localStorage.setItem('timerData', JSON.stringify(data));
+        
+        return true;
+    } catch (error) {
+        console.error('Save data error:', error);
+        return false;
+    }
+}
+
 function loadSavedData() {
     try {
-        const today = new Date().toLocaleDateString();
-        let savedData;
+        const now = new Date();
+        const today = now.toISOString().slice(0, 10);
         
-        // 尝试从主存储加载数据
-        const mainData = localStorage.getItem('timerData');
-        const backupData = localStorage.getItem('timerData_backup');
-        
-        if (mainData) {
-            savedData = JSON.parse(mainData);
-        } else if (backupData) {
-            // 如果主存储失败，使用备份数据
-            savedData = JSON.parse(backupData);
-            // 恢复主存储
-            localStorage.setItem('timerData', backupData);
-        } else {
-            savedData = {};
+        // 加载保存的数据
+        const savedDataStr = localStorage.getItem('timerData');
+        if (!savedDataStr) {
+            console.log('No saved data found');
+            resetAllData();
+            return false;
         }
 
-        // 加载月度统计数据，无论是否是同一天
+        const savedData = JSON.parse(savedDataStr);
+        console.log('Loaded data:', savedData);
+
+        // 加载月度统计数据
         monthlyStats = savedData.monthlyStats || {};
-        
+
+        // 检查是否是同一天
         if (savedData.date === today) {
-            // 如果是同一天，加载当日数据
+            // 加载当日数据
             dailyTotal = savedData.dailyTotal || 0;
             records = savedData.records || [];
             dailyFocusCount = savedData.dailyFocusCount || 0;
@@ -214,29 +295,28 @@ function loadSavedData() {
                 wakeup: null, sleep: null,
                 exercise: 0, study: 0
             };
-            
-            // 恢复计时状态
+
+            // 恢复计时器状态
             if (savedData.timerState) {
+                console.log('Restoring timer state:', savedData.timerState);
                 restoreTimerState(savedData.timerState);
             }
         } else {
-            // 如果是新的一天，重置当日数据
+            console.log('New day detected, resetting daily data');
             resetDailyData();
         }
 
         // 更新界面
         updateUI();
-        
         return true;
     } catch (error) {
         console.error('Load data error:', error);
-        // 如果加载失败，重置所有数据
+        console.error('Error details:', error.stack);
         resetAllData();
         return false;
     }
 }
 
-// 添加新的辅助函数
 function resetDailyData() {
     dailyTotal = 0;
     records = [];
@@ -276,78 +356,62 @@ function updateUI() {
 }
 
 function restoreTimerState(state) {
-    startTime = state.startTime;
-    startTimeForDisplay = state.startTimeForDisplay ? new Date(state.startTimeForDisplay) : null;
-    isPaused = state.isPaused;
-    totalPausedTime = state.totalPausedTime;
-    pauseStartTime = state.pauseStartTime ? new Date(state.pauseStartTime) : null;
-    currentTaskType = state.currentTaskType;
-    taskInput.value = state.taskInput || '';
-
-    // 更新按钮状态
-    startBtn.disabled = true;
-    pauseBtn.disabled = false;
-    stopBtn.disabled = false;
-
-    // 重新启动计时器
-    if (!isPaused) {
-        timerInterval = setInterval(updateTimer, 1000);
-    } else {
-        pauseBtn.textContent = 'Resume';
-    }
-}
-
-// 保存数据到本地存储
-function saveData() {
     try {
-        const data = {
-            date: new Date().toLocaleDateString(),
-            dailyTotal,
-            records,
-            dailyFocusCount,
-            moodCounts,
-            monthlyStats,
-            dailyTracking,
-            // 添加计时状态
-            timerState: startTime ? {
-                startTime,
-                startTimeForDisplay: startTimeForDisplay?.getTime(),
-                isPaused,
-                totalPausedTime,
-                pauseStartTime: pauseStartTime?.getTime(),
-                currentTaskType,
-                taskInput: taskInput.value
-            } : null,
-            // 添加时间戳
-            lastSaved: Date.now()
-        };
+        // 恢复基本状态
+        startTime = Number(state.startTime);  // 确保是数字
+        startTimeForDisplay = state.startTimeForDisplay ? new Date(state.startTimeForDisplay) : null;
+        isPaused = state.isPaused;
+        totalPausedTime = Number(state.totalPausedTime || 0);  // 确保是数字
+        pauseStartTime = state.pauseStartTime ? new Date(state.pauseStartTime) : null;
+        currentTaskType = state.currentTaskType;
+        taskInput.value = state.taskInput || '';
 
-        // 确保当天的记录也保存在月度统计中
-        const now = new Date();
-        const currentMonth = now.toISOString().slice(0, 7);
-        const currentDay = now.getDate().toString();
-        
-        if (monthlyStats[currentMonth]?.dailyStats[currentDay]) {
-            monthlyStats[currentMonth].dailyStats[currentDay].records = records.map(record => ({
-                ...record,
-                date: data.date
-            }));
+        // 更新按钮状态
+        startBtn.disabled = true;
+        pauseBtn.disabled = false;
+        stopBtn.disabled = false;
+
+        // 如果计时器正在运行，重新启动它
+        if (!isPaused) {
+            // 清除任何现有的计时器
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            // 计算已经过去的时间并更新总暂停时间
+            if (pauseStartTime) {
+                totalPausedTime += Date.now() - pauseStartTime;
+                pauseStartTime = null;
+            }
+            
+            // 立即更新一次显示
+            updateTimer();
+            
+            // 启动新的计时器
+            timerInterval = setInterval(updateTimer, 1000);
+            pauseBtn.textContent = 'Pause';
+        } else {
+            // 如果是暂停状态，更新按钮文本
+            pauseBtn.textContent = 'Resume';
+            // 确保显示正确的时间
+            updateTimer();
         }
 
-        // 保存到 localStorage
-        localStorage.setItem('timerData', JSON.stringify(data));
-        
-        // 额外保存一份备份
-        localStorage.setItem('timerData_backup', JSON.stringify(data));
-        
-        return true;
+        console.log('Timer state restored:', {
+            startTime,
+            isPaused,
+            totalPausedTime,
+            currentTaskType,
+            elapsedTime: Date.now() - startTime - totalPausedTime
+        });
     } catch (error) {
-        console.error('Save data error:', error);
-        return false;
+        console.error('Error restoring timer state:', error);
+        // 如果恢复失败，重置计时器
+        resetTimer();
     }
 }
 
-// 修改 setupMoodButtons 函数
 function setupMoodButtons() {
     const moodButtons = document.querySelectorAll('.mood-btn');
     console.log('Found mood buttons:', moodButtons.length); // 检查是否找到按钮
@@ -382,7 +446,6 @@ function setupMoodButtons() {
     });
 }
 
-// 修改 updateMoodCounts 函数
 function updateMoodCounts() {
     Object.keys(moodCounts).forEach(mood => {
         const countSpan = document.getElementById(`${mood}-count`);
@@ -392,7 +455,6 @@ function updateMoodCounts() {
     });
 }
 
-// 修改 updateMonthlyStats 函数
 function updateMonthlyStats(duration, record) {
     const now = new Date();
     const currentMonth = now.toISOString().slice(0, 7);
@@ -449,7 +511,6 @@ function updateMonthlyStats(duration, record) {
     saveData();
 }
 
-// 修改 updateMonthlyChart 函数，添加心情统计显示
 function updateMonthlyChart() {
     // 检查 Chart 是否已加载
     if (typeof Chart === 'undefined') {
@@ -464,19 +525,19 @@ function updateMonthlyChart() {
     }
     
     try {
-        // 如果已经存在图表，先销毁它
+        // 正确处理图表销毁
         if (window.monthlyChart && typeof window.monthlyChart.destroy === 'function') {
             window.monthlyChart.destroy();
+        } else {
+            window.monthlyChart = null;
         }
 
-        const now = new Date(localStorage.getItem('timerData') ? JSON.parse(localStorage.getItem('timerData')).date : new Date());
-        const currentMonth = now.toISOString().slice(0, 7);
-        console.log('Current month:', currentMonth);  // 调试输出
-        const monthData = monthlyStats[currentMonth] || { dailyStats: {} };
-        console.log('Month data:', monthData);  // 调试输出
+        const now = new Date();
+        const currentMonth = now.toISOString().slice(0, 7);  // YYYY-MM
+        console.log('Current month:', currentMonth);
         
-        // 获取当月第一天的日期
-        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthData = monthlyStats[currentMonth] || { dailyStats: {} };
+        console.log('Month data:', monthData);
         
         // 获取当月天数
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -485,32 +546,37 @@ function updateMonthlyChart() {
         // 获取每天是星期几
         const weekdays = days.map(day => {
             const date = new Date(now.getFullYear(), now.getMonth(), day);
-            return date.getDay(); // 0 是周日，1-6 是周一到周六
+            return date.getDay();
         });
 
         // 获取每种类型的专注时间数据（小时）
         const exerciseData = days.map(day => {
             const dayStats = monthData.dailyStats[day.toString()] || {};
             const time = dayStats.exerciseTime || 0;
-            return time > 0 ? time / (1000 * 60 * 60) : 0;
+            return time / (1000 * 60 * 60);  // 转换为小时
         });
         
         const studyData = days.map(day => {
             const dayStats = monthData.dailyStats[day.toString()] || {};
             const time = dayStats.studyTime || 0;
-            return time > 0 ? time / (1000 * 60 * 60) : 0;
+            return time / (1000 * 60 * 60);  // 转换为小时
         });
         
         const otherData = days.map(day => {
             const dayStats = monthData.dailyStats[day.toString()] || {};
             const time = dayStats.otherTime || 0;
-            return time > 0 ? time / (1000 * 60 * 60) : 0;
+            return time / (1000 * 60 * 60);  // 转换为小时
         });
 
         const focusData = days.map(day => {
             const dayStats = monthData.dailyStats[day.toString()] || {};
             return dayStats.focusCount || 0;
         });
+
+        console.log('Exercise data:', exerciseData);
+        console.log('Study data:', studyData);
+        console.log('Other data:', otherData);
+        console.log('Focus data:', focusData);
 
         window.monthlyChart = new Chart(ctx, {
             type: 'bar',
@@ -520,7 +586,7 @@ function updateMonthlyChart() {
                     {
                         label: 'Exercise',
                         data: exerciseData,
-                        backgroundColor: 'rgba(255, 145, 85, 0.7)',  // 温暖的橙色
+                        backgroundColor: 'rgba(255, 145, 85, 0.7)',
                         borderColor: 'rgba(255, 145, 85, 1)',
                         borderWidth: 1,
                         stack: 'Stack 0'
@@ -528,7 +594,7 @@ function updateMonthlyChart() {
                     {
                         label: 'Study',
                         data: studyData,
-                        backgroundColor: 'rgba(100, 181, 246, 0.7)',  // 清爽的蓝色
+                        backgroundColor: 'rgba(100, 181, 246, 0.7)',
                         borderColor: 'rgba(100, 181, 246, 1)',
                         borderWidth: 1,
                         stack: 'Stack 0'
@@ -536,7 +602,7 @@ function updateMonthlyChart() {
                     {
                         label: 'Other Focus',
                         data: otherData,
-                        backgroundColor: 'rgba(156, 204, 101, 0.7)',  // 柔和的绿色
+                        backgroundColor: 'rgba(156, 204, 101, 0.7)',
                         borderColor: 'rgba(156, 204, 101, 1)',
                         borderWidth: 1,
                         stack: 'Stack 0'
@@ -545,7 +611,7 @@ function updateMonthlyChart() {
                         label: 'Effective Sessions',
                         data: focusData,
                         type: 'line',
-                        backgroundColor: 'rgba(171, 71, 188, 0.2)',  // 淡紫色
+                        backgroundColor: 'rgba(171, 71, 188, 0.2)',
                         borderColor: 'rgba(171, 71, 188, 1)',
                         borderWidth: 2,
                         fill: false,
@@ -565,27 +631,10 @@ function updateMonthlyChart() {
                         ticks: {
                             stepSize: 1,
                             color: function(context) {
-                                if (!context || typeof context.index === 'undefined') return 'rgba(0, 0, 0, 0.8)';
                                 const weekday = weekdays[context.index];
                                 return (weekday === 0 || weekday === 6) ? 
                                     'rgba(255, 145, 85, 1)' : 
                                     'rgba(0, 0, 0, 0.8)';
-                            },
-                            font: function(context) {
-                                if (!context || typeof context.index === 'undefined') return { weight: 'normal' };
-                                const weekday = weekdays[context.index];
-                                return {
-                                    weight: (weekday === 0 || weekday === 6) ? 'bold' : 'normal'
-                                };
-                            }
-                        },
-                        grid: {
-                            color: function(context) {
-                                if (!context || typeof context.index === 'undefined') return 'rgba(0, 0, 0, 0.1)';
-                                const weekday = weekdays[context.index];
-                                return (weekday === 0 || weekday === 6) ? 
-                                    'rgba(255, 145, 85, 0.1)' : 
-                                    'rgba(0, 0, 0, 0.1)';
                             }
                         }
                     },
@@ -617,76 +666,28 @@ function updateMonthlyChart() {
                             drawOnChartArea: false
                         }
                     }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Monthly Statistics'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                if (context.dataset.type === 'line') {
-                                    return `${context.dataset.label}: ${context.raw}`;
-                                }
-                                return `${context.dataset.label}: ${context.raw.toFixed(1)}h`;
-                            }
-                        }
-                    }
                 }
             }
         });
-
-        // 修改心情统计显示
-        if (monthData && monthData.dailyMoods) {
-            const moodEmojis = {
-                great: '😊',
-                good: '🙂',
-                meh: '😐',
-                bad: '😞'
-            };
-
-            const moodStatsHtml = `
-                <div class="mood-stats">
-                    <h3>Monthly Mood Records</h3>
-                    <ul>
-                        ${Object.entries(monthData.dailyMoods)
-                            .map(([day, {mood, count}]) => 
-                                `<li>Day ${day}: ${moodEmojis[mood]} (${count} times)</li>`
-                            )
-                            .join('')}
-                    </ul>
-                </div>
-            `;
-            
-            // 在图表下方显示心情统计
-            const chartContainer = document.querySelector('.chart-container');
-            let moodStatsDiv = document.querySelector('.mood-stats');
-            if (!moodStatsDiv) {
-                chartContainer.insertAdjacentHTML('afterend', moodStatsHtml);
-            } else {
-                moodStatsDiv.outerHTML = moodStatsHtml;
-            }
-        }
     } catch (error) {
-        console.error('Error updating chart:', error);
+        console.error('Error updating monthly chart:', error);
+        console.error('Error details:', error.stack);
     }
-
-    // 更新其他图表
-    updateSleepChart();
 }
 
-// 更新睡眠时间图表
 function updateSleepChart() {
     const ctx = document.getElementById('sleepChart');
     if (!ctx) return;
 
-    if (window.sleepChart instanceof Chart) {
+    // 正确处理图表销毁
+    if (window.sleepChart && typeof window.sleepChart.destroy === 'function') {
         window.sleepChart.destroy();
+    } else {
+        window.sleepChart = null;
     }
 
-    const now = new Date(localStorage.getItem('timerData') ? JSON.parse(localStorage.getItem('timerData')).date : new Date());
-    const currentMonth = now.toISOString().slice(0, 7);
+    const now = new Date();
+    const currentMonth = now.toISOString().slice(0, 7);  // YYYY-MM
     const monthData = monthlyStats[currentMonth] || { dailyStats: {} };
     
     // 获取当月天数
@@ -855,13 +856,11 @@ function updateSleepChart() {
     });
 }
 
-// 辅助函数：将时间字符串转换为分钟数
 function timeToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 }
 
-// 保留导出/导入功能
 function exportData() {
     try {
         // 准备导出数据
@@ -966,31 +965,39 @@ function importData(file) {
                 throw new Error('Invalid data structure: missing monthlyStats');
             }
 
-            // 保存数据到 localStorage，保持原有的月度数据结构
-            const today = new Date().toLocaleDateString();
+            // 获取当前日期，使用 YYYY-MM-DD 格式
+            const now = new Date();
+            const today = now.toISOString().slice(0, 10);
+            
+            // 准备要保存的数据
             const currentData = {
-                date: today,
+                date: today,  // 使用标准格式
                 dailyTotal: 0,
                 records: [],
                 dailyFocusCount: 0,
                 moodCounts: {
                     great: 0, good: 0, meh: 0, bad: 0
                 },
-                monthlyStats: importedData.monthlyStats,  // 直接使用导入的月度数据
+                monthlyStats: importedData.monthlyStats,
                 dailyTracking: {
                     wakeup: null, sleep: null,
                     exercise: 0, study: 0
                 }
             };
 
+            // 更新全局变量
+            monthlyStats = importedData.monthlyStats;
+
+            // 保存到 localStorage
             localStorage.setItem('timerData', JSON.stringify(currentData));
             console.log('Imported data:', currentData);
 
-            // 重新加载数据
-            loadSavedData();
-            
-            // 强制更新图表
+            // 确保在 DOM 更新后再更新图表
             setTimeout(() => {
+                const currentMonth = today.slice(0, 7);  // YYYY-MM
+                console.log('Updating charts for month:', currentMonth);
+                console.log('Available data:', monthlyStats[currentMonth]);
+
                 updateMonthlyChart();
                 updateSleepChart();
                 updateSummaryCharts();
@@ -1005,7 +1012,6 @@ function importData(file) {
     reader.readAsText(file);
 }
 
-// 添加自动重置功能
 function setupAutoReset() {
     // 计算距离下一个凌晨0点的毫秒数
     const now = new Date();
@@ -1034,7 +1040,6 @@ function setupAutoReset() {
     }, timeToMidnight);
 }
 
-// 更新日期时间显示
 function updateDateTime() {
     const now = new Date();
     const options = { 
@@ -1048,7 +1053,6 @@ function updateDateTime() {
     currentDatetime.textContent = now.toLocaleDateString('en-US', options);
 }
 
-// 修改 setupTrackingButtons 函数
 function setupTrackingButtons() {
     document.querySelectorAll('.track-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1118,7 +1122,6 @@ function setupTrackingButtons() {
     });
 }
 
-// 修改 DOMContentLoaded 事件处理
 document.addEventListener('DOMContentLoaded', () => {
     loadSavedData();
     setupMoodButtons();
@@ -1173,4 +1176,50 @@ function updateSummaryCharts() {
     const monthMinutes = Math.floor((monthFocusTime % (1000 * 60 * 60)) / (1000 * 60));
     document.getElementById('month-focus').textContent = `${monthHours}h ${monthMinutes}m`;
     document.getElementById('month-sessions').textContent = monthSessions;
+}
+
+function updateTrackingDisplay() {
+    // 更新唤醒时间
+    const wakeupTime = document.getElementById('wakeup-time');
+    if (wakeupTime) {
+        wakeupTime.textContent = dailyTracking.wakeup || '--:--';
+    }
+
+    // 更新睡眠时间
+    const sleepTime = document.getElementById('sleep-time');
+    if (sleepTime) {
+        sleepTime.textContent = dailyTracking.sleep || '--:--';
+    }
+
+    // 更新运动次数
+    const exerciseCount = document.getElementById('exercise-count');
+    if (exerciseCount) {
+        exerciseCount.textContent = dailyTracking.exercise || '0';
+    }
+
+    // 更新学习次数
+    const studyCount = document.getElementById('study-count');
+    if (studyCount) {
+        studyCount.textContent = dailyTracking.study || '0';
+    }
+}
+
+function addRecordToTable(record) {
+    // 创建新行
+    const row = recordsTable.insertRow(0);
+    
+    // 添加单元格
+    const taskCell = row.insertCell(0);
+    const startTimeCell = row.insertCell(1);
+    const durationCell = row.insertCell(2);
+
+    // 填充数据
+    taskCell.textContent = record.task;
+    startTimeCell.textContent = record.startTime;
+    durationCell.textContent = record.duration;
+
+    // 如果是长时间专注，添加高亮
+    if (record.isLongFocus) {
+        row.style.backgroundColor = '#e8f5e9';
+    }
 }

@@ -58,21 +58,72 @@
             border-color: #2196F3;
         }
 
-        /* 按钮样式 */
+        /* 控制按钮容器 */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        /* 按钮基础样式 */
         .controls button {
-            background-color: #2196F3;
             color: white;
             border: none;
             padding: 10px 20px;
-            margin: 0 5px;
             border-radius: 20px;
             cursor: pointer;
             transition: all 0.3s;
+            min-width: 120px;
+            font-size: 1em;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
         }
 
-        .controls button:hover:not(:disabled) {
+        /* 开始按钮 */
+        .controls button.start-btn {
+            background-color: #4CAF50;  /* 绿色 */
+        }
+        .controls button.start-btn:hover:not(:disabled) {
+            background-color: #388E3C;
+        }
+
+        /* 暂停按钮 */
+        .controls button.pause-btn {
+            background-color: #FFA000;  /* 橙色 */
+        }
+        .controls button.pause-btn:hover:not(:disabled) {
+            background-color: #FF8F00;
+        }
+
+        /* 继续按钮 */
+        .controls button.resume-btn {
+            background-color: #2196F3;  /* 蓝色 */
+        }
+        .controls button.resume-btn:hover:not(:disabled) {
             background-color: #1976D2;
-            transform: translateY(-2px);
+        }
+
+        /* 停止按钮 */
+        .controls button.stop-btn {
+            background-color: #F44336;  /* 红色 */
+        }
+        .controls button.stop-btn:hover:not(:disabled) {
+            background-color: #D32F2F;
+        }
+
+        /* 禁用状态 */
+        .controls button:disabled {
+            background-color: #ccc !important;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* 图标样式 */
+        .controls button .material-icons {
+            font-size: 1.2em;
         }
 
         /* 表格样式 */
@@ -458,13 +509,13 @@
     <div class="timer" id="timer">00:00:00</div>
     
     <div class="controls">
-        <button id="startBtn">
+        <button id="startBtn" class="start-btn">
             <span class="material-icons">play_arrow</span>Start
         </button>
-        <button id="pauseBtn" disabled>
+        <button id="pauseBtn" class="pause-btn" disabled>
             <span class="material-icons">pause</span>Pause
         </button>
-        <button id="stopBtn" disabled>
+        <button id="stopBtn" class="stop-btn" disabled>
             <span class="material-icons">stop</span>Stop
         </button>
     </div>
