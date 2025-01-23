@@ -180,152 +180,171 @@ function resetTimer(keepTaskName = false) {
 
 // 加载保存的数据
 function loadSavedData() {
-    const today = new Date().toLocaleDateString();
-    const savedData = JSON.parse(localStorage.getItem('timerData') || '{}');
-    
-    // 加载月度统计数据，无论是否是同一天
-    monthlyStats = savedData.monthlyStats || {};
-    
-    if (savedData.date === today) {
-        // 如果是同一天，加载当日数据
-        dailyTotal = savedData.dailyTotal || 0;
-        records = savedData.records || [];
-        dailyFocusCount = savedData.dailyFocusCount || 0;
-        moodCounts = savedData.moodCounts || {
-            great: 0,
-            good: 0,
-            meh: 0,
-            bad: 0
-        };
-        dailyTracking = savedData.dailyTracking || {
-            wakeup: null,
-            sleep: null,
-            exercise: 0,
-            study: 0
-        };
+    try {
+        const today = new Date().toLocaleDateString();
+        let savedData;
         
-        // 恢复计时状态
-        if (savedData.timerState) {
-            const state = savedData.timerState;
-            startTime = state.startTime;
-            startTimeForDisplay = state.startTimeForDisplay ? new Date(state.startTimeForDisplay) : null;
-            isPaused = state.isPaused;
-            totalPausedTime = state.totalPausedTime;
-            pauseStartTime = state.pauseStartTime ? new Date(state.pauseStartTime) : null;
-            currentTaskType = state.currentTaskType;
-            taskInput.value = state.taskInput || '';
+        // 尝试从主存储加载数据
+        const mainData = localStorage.getItem('timerData');
+        const backupData = localStorage.getItem('timerData_backup');
+        
+        if (mainData) {
+            savedData = JSON.parse(mainData);
+        } else if (backupData) {
+            // 如果主存储失败，使用备份数据
+            savedData = JSON.parse(backupData);
+            // 恢复主存储
+            localStorage.setItem('timerData', backupData);
+        } else {
+            savedData = {};
+        }
 
-            // 更新按钮状态
-            startBtn.disabled = true;
-            pauseBtn.disabled = false;
-            stopBtn.disabled = false;
-
-            // 重新启动计时器
-            if (!isPaused) {
-                timerInterval = setInterval(updateTimer, 1000);
-            } else {
-                pauseBtn.textContent = 'Resume';
+        // 加载月度统计数据，无论是否是同一天
+        monthlyStats = savedData.monthlyStats || {};
+        
+        if (savedData.date === today) {
+            // 如果是同一天，加载当日数据
+            dailyTotal = savedData.dailyTotal || 0;
+            records = savedData.records || [];
+            dailyFocusCount = savedData.dailyFocusCount || 0;
+            moodCounts = savedData.moodCounts || {
+                great: 0, good: 0, meh: 0, bad: 0
+            };
+            dailyTracking = savedData.dailyTracking || {
+                wakeup: null, sleep: null,
+                exercise: 0, study: 0
+            };
+            
+            // 恢复计时状态
+            if (savedData.timerState) {
+                restoreTimerState(savedData.timerState);
             }
+        } else {
+            // 如果是新的一天，重置当日数据
+            resetDailyData();
         }
-        
-        // 更新界面显示
-        updateMoodCounts();
-        updateSummaryCharts();
-        
-        // 更新记录表格
-        recordsTable.innerHTML = '';
-        records.forEach(record => {
-            const row = recordsTable.insertRow(0);
-            const taskCell = row.insertCell(0);
-            const startTimeCell = row.insertCell(1);
-            const durationCell = row.insertCell(2);
 
-            taskCell.textContent = record.task;
-            startTimeCell.textContent = record.startTime;
-            durationCell.textContent = record.duration;
-
-            if (record.isLongFocus) {
-                row.style.backgroundColor = '#e8f5e9';
-            }
-        });
+        // 更新界面
+        updateUI();
         
-        // 更新追踪按钮显示
-        if (dailyTracking.wakeup) {
-            document.getElementById('wakeup-time').textContent = dailyTracking.wakeup;
-        }
-        if (dailyTracking.sleep) {
-            document.getElementById('sleep-time').textContent = dailyTracking.sleep;
-        }
-        document.getElementById('exercise-count').textContent = dailyTracking.exercise;
-        document.getElementById('study-count').textContent = dailyTracking.study;
-    } else {
-        // 如果是新的一天，只重置当日数据
-        dailyTotal = 0;
-        records = [];
-        dailyFocusCount = 0;
-        moodCounts = {
-            great: 0,
-            good: 0,
-            meh: 0,
-            bad: 0
-        };
-        dailyTracking = {
-            wakeup: null,
-            sleep: null,
-            exercise: 0,
-            study: 0
-        };
-        
-        // 更新界面显示
-        updateMoodCounts();
-        updateSummaryCharts();
-        recordsTable.innerHTML = '';
+        return true;
+    } catch (error) {
+        console.error('Load data error:', error);
+        // 如果加载失败，重置所有数据
+        resetAllData();
+        return false;
     }
+}
 
-    // 无论是否同一天，都更新图表
-    console.log('Updating charts with monthlyStats:', monthlyStats);
+// 添加新的辅助函数
+function resetDailyData() {
+    dailyTotal = 0;
+    records = [];
+    dailyFocusCount = 0;
+    moodCounts = {
+        great: 0, good: 0, meh: 0, bad: 0
+    };
+    dailyTracking = {
+        wakeup: null, sleep: null,
+        exercise: 0, study: 0
+    };
+}
+
+function resetAllData() {
+    resetDailyData();
+    monthlyStats = {};
+}
+
+function updateUI() {
+    updateMoodCounts();
+    updateSummaryCharts();
+    recordsTable.innerHTML = '';
+    
+    // 更新记录表格
+    records.forEach(record => {
+        addRecordToTable(record);
+    });
+    
+    // 更新追踪按钮显示
+    updateTrackingDisplay();
+    
+    // 更新图表
     setTimeout(() => {
         updateMonthlyChart();
+        updateSleepChart();
     }, 100);
-    updateSleepChart();
-    updateSummaryCharts();
+}
+
+function restoreTimerState(state) {
+    startTime = state.startTime;
+    startTimeForDisplay = state.startTimeForDisplay ? new Date(state.startTimeForDisplay) : null;
+    isPaused = state.isPaused;
+    totalPausedTime = state.totalPausedTime;
+    pauseStartTime = state.pauseStartTime ? new Date(state.pauseStartTime) : null;
+    currentTaskType = state.currentTaskType;
+    taskInput.value = state.taskInput || '';
+
+    // 更新按钮状态
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
+    stopBtn.disabled = false;
+
+    // 重新启动计时器
+    if (!isPaused) {
+        timerInterval = setInterval(updateTimer, 1000);
+    } else {
+        pauseBtn.textContent = 'Resume';
+    }
 }
 
 // 保存数据到本地存储
 function saveData() {
-    const data = {
-        date: new Date().toLocaleDateString(),
-        dailyTotal,
-        records,
-        dailyFocusCount,
-        moodCounts,
-        monthlyStats,
-        dailyTracking,
-        // 添加计时状态
-        timerState: startTime ? {
-            startTime,
-            startTimeForDisplay: startTimeForDisplay?.getTime(),
-            isPaused,
-            totalPausedTime,
-            pauseStartTime: pauseStartTime?.getTime(),
-            currentTaskType,
-            taskInput: taskInput.value
-        } : null
-    };
+    try {
+        const data = {
+            date: new Date().toLocaleDateString(),
+            dailyTotal,
+            records,
+            dailyFocusCount,
+            moodCounts,
+            monthlyStats,
+            dailyTracking,
+            // 添加计时状态
+            timerState: startTime ? {
+                startTime,
+                startTimeForDisplay: startTimeForDisplay?.getTime(),
+                isPaused,
+                totalPausedTime,
+                pauseStartTime: pauseStartTime?.getTime(),
+                currentTaskType,
+                taskInput: taskInput.value
+            } : null,
+            // 添加时间戳
+            lastSaved: Date.now()
+        };
 
-    // 确保当天的记录也保存在月度统计中
-    const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7);
-    const currentDay = now.getDate().toString();
-    
-    if (monthlyStats[currentMonth]?.dailyStats[currentDay]) {
-        monthlyStats[currentMonth].dailyStats[currentDay].records = records.map(record => ({
-            ...record,
-            date: data.date
-        }));
+        // 确保当天的记录也保存在月度统计中
+        const now = new Date();
+        const currentMonth = now.toISOString().slice(0, 7);
+        const currentDay = now.getDate().toString();
+        
+        if (monthlyStats[currentMonth]?.dailyStats[currentDay]) {
+            monthlyStats[currentMonth].dailyStats[currentDay].records = records.map(record => ({
+                ...record,
+                date: data.date
+            }));
+        }
+
+        // 保存到 localStorage
+        localStorage.setItem('timerData', JSON.stringify(data));
+        
+        // 额外保存一份备份
+        localStorage.setItem('timerData_backup', JSON.stringify(data));
+        
+        return true;
+    } catch (error) {
+        console.error('Save data error:', error);
+        return false;
     }
-
-    localStorage.setItem('timerData', JSON.stringify(data));
 }
 
 // 修改 setupMoodButtons 函数
@@ -1026,13 +1045,7 @@ function updateDateTime() {
         minute: '2-digit',
         hour12: false        // 使用24小时制
     };
-    currentDatetime.textContent = now.toLocaleDateString('en-US', options) + 
-                                 ' ' + 
-                                 now.toLocaleTimeString('en-US', {
-                                     hour: '2-digit',
-                                     minute: '2-digit',
-                                     hour12: false
-                                 });
+    currentDatetime.textContent = now.toLocaleDateString('en-US', options);
 }
 
 // 修改 setupTrackingButtons 函数
