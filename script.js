@@ -13,8 +13,8 @@ let moodCounts = {
 };
 let monthlyStats = {};
 let dailyTracking = {
-    wakeup: [],  // 改为数组
-    sleep: [],   // 改为数组
+    wakeup: null,  // 改回单个时间值
+    sleep: null,   // 改回单个时间值
     exercise: 0,
     study: 0
 };
@@ -329,8 +329,8 @@ function loadSavedData() {
                 great: 0, good: 0, meh: 0, bad: 0
             };
             dailyTracking = savedData.dailyTracking || {
-                wakeup: [],
-                sleep: [],
+                wakeup: null,
+                sleep: null,
                 exercise: 0,
                 study: 0
             };
@@ -355,15 +355,15 @@ function loadSavedData() {
 
 function resetDailyData() {
     dailyTotal = 0;
-    records = [];  // 确保清空记录
-    recordsTable.innerHTML = '';  // 清空记录表格
+    records = [];
+    recordsTable.innerHTML = '';
     dailyFocusCount = 0;
     moodCounts = {
         great: 0, good: 0, meh: 0, bad: 0
     };
     dailyTracking = {
-        wakeup: [],
-        sleep: [],
+        wakeup: null,
+        sleep: null,
         exercise: 0,
         study: 0
     };
@@ -1019,8 +1019,8 @@ function importData(file) {
                 },
                 monthlyStats: importedData.monthlyStats,
                 dailyTracking: {
-                    wakeup: [],
-                    sleep: [],
+                    wakeup: null,
+                    sleep: null,
                     exercise: 0,
                     study: 0
                 }
@@ -1102,30 +1102,22 @@ function setupTrackingButtons() {
             
             switch(type) {
                 case 'wakeup':
-                    const wakeTimeStr = now.toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                    });
-                    dailyTracking.wakeup.push(wakeTimeStr);  // 添加到数组中
-
-                    // 计算睡眠时长
-                    if (dailyTracking.sleep.length > 0) {
-                        const lastSleepTime = dailyTracking.sleep[dailyTracking.sleep.length - 1];
-                        const duration = calculateDuration(lastSleepTime, wakeTimeStr);  // 计算时长
-                        console.log(`Duration: ${duration} hours`);
-                    }
-                    document.getElementById('wakeup-time').textContent = wakeTimeStr;
-                    saveData();
-                    break;
                 case 'sleep':
-                    const sleepTimeStr = now.toLocaleTimeString('en-US', {
+                    const timeStr = now.toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
                         hour12: false
                     });
-                    dailyTracking.sleep.push(sleepTimeStr);  // 添加到数组中
-                    document.getElementById('sleep-time').textContent = sleepTimeStr;
+                    dailyTracking[type] = timeStr;  // 直接保存时间字符串
+                    document.getElementById(`${type}-time`).textContent = timeStr;
+
+                    // 如果是起床时间且有睡眠时间，计算睡眠时长
+                    if (type === 'wakeup' && dailyTracking.sleep) {
+                        const duration = calculateDuration(dailyTracking.sleep, timeStr);
+                        console.log(`Sleep duration: ${duration} hours`);
+                    }
+                    
+                    // 立即保存数据
                     saveData();
                     break;
                 case 'exercise':
@@ -1242,13 +1234,13 @@ function updateTrackingDisplay() {
     // 更新唤醒时间
     const wakeupTime = document.getElementById('wakeup-time');
     if (wakeupTime) {
-        wakeupTime.textContent = dailyTracking.wakeup.length > 0 ? dailyTracking.wakeup[dailyTracking.wakeup.length - 1] : '--:--';
+        wakeupTime.textContent = dailyTracking.wakeup || '--:--';
     }
 
     // 更新睡眠时间
     const sleepTime = document.getElementById('sleep-time');
     if (sleepTime) {
-        sleepTime.textContent = dailyTracking.sleep.length > 0 ? dailyTracking.sleep[dailyTracking.sleep.length - 1] : '--:--';
+        sleepTime.textContent = dailyTracking.sleep || '--:--';
     }
 
     // 更新运动次数
