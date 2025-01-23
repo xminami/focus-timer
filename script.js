@@ -244,12 +244,13 @@ function saveData() {
 
         // 更新月度统计中的睡眠数据
         const dayStats = monthlyStats[currentMonth].dailyStats[currentDay];
-        dayStats.sleep = dailyTracking.sleep;
-        dayStats.wakeup = dailyTracking.wakeup;
+        // 只有在有值时才更新，避免覆盖已有数据
+        if (dailyTracking.sleep) dayStats.sleep = dailyTracking.sleep;
+        if (dailyTracking.wakeup) dayStats.wakeup = dailyTracking.wakeup;
         dayStats.exercise = dailyTracking.exercise || 0;
         dayStats.study = dailyTracking.study || 0;
 
-        // 准备保存的数据，确保每条记录都有正确的日期
+        // 准备保存的数据
         const today = now.toISOString().slice(0, 10);
         records.forEach(record => {
             if (!record.date) {
@@ -288,6 +289,8 @@ function loadSavedData() {
     try {
         const now = new Date();
         const today = now.toISOString().slice(0, 10);
+        const currentMonth = now.toISOString().slice(0, 7);
+        const currentDay = now.getDate().toString();
         
         const savedDataStr = localStorage.getItem('timerData');
         if (!savedDataStr) {
@@ -300,51 +303,63 @@ function loadSavedData() {
         console.log('Loading data:', {
             savedDate: savedData.date,
             currentDate: today,
-            recordsCount: savedData.records?.length || 0
+            recordsCount: savedData.records?.length || 0,
+            dailyTracking: savedData.dailyTracking,
+            monthlyStats: savedData.monthlyStats?.[currentMonth]?.dailyStats?.[currentDay]
         });
 
         // 加载月度统计数据
         monthlyStats = savedData.monthlyStats || {};
 
-        // 确保所有记录都有日期字段
-        if (savedData.records) {
-            savedData.records = savedData.records.map(record => ({
-                ...record,
-                date: record.date || savedData.date
-            }));
-        }
+        // 从月度统计中获取今天的数据
+        const dayStats = monthlyStats[currentMonth]?.dailyStats[currentDay] || {};
 
-        // 获取今天的记录
-        const todayRecords = (savedData.records || []).filter(record => record.date === today);
-        console.log('Today records:', todayRecords);
-
-        if (todayRecords.length > 0) {
-            // 有今天的记录，加载它们
-            records = todayRecords;
-            dailyTotal = todayRecords.reduce((sum, record) => sum + record.durationMs, 0);
-            dailyFocusCount = todayRecords.filter(record => record.isLongFocus).length;
-            
-            // 加载其他状态
+        if (savedData.date === today) {
+            // 同一天，加载所有数据
+            records = savedData.records || [];
+            dailyTotal = savedData.dailyTotal || 0;
+            dailyFocusCount = savedData.dailyFocusCount || 0;
             moodCounts = savedData.moodCounts || {
                 great: 0, good: 0, meh: 0, bad: 0
             };
-            dailyTracking = savedData.dailyTracking || {
-                wakeup: null,
-                sleep: null,
-                exercise: 0,
-                study: 0
+            
+            // 加载 dailyTracking 数据，优先使用 savedData 中的数据
+            dailyTracking = {
+                wakeup: savedData.dailyTracking?.wakeup || dayStats.wakeup || null,
+                sleep: savedData.dailyTracking?.sleep || dayStats.sleep || null,
+                exercise: savedData.dailyTracking?.exercise || 0,
+                study: savedData.dailyTracking?.study || 0
             };
 
-            // 只在同一天恢复计时器状态
-            if (savedData.timerState && savedData.date === today) {
+            if (savedData.timerState) {
                 restoreTimerState(savedData.timerState);
             }
         } else {
-            // 没有今天的记录，重置数据
+            // 新的一天，但保留月度统计中的数据
             resetDailyData();
+            // 从月度统计中恢复今天的睡眠数据
+            if (dayStats) {
+                dailyTracking.wakeup = dayStats.wakeup || null;
+                dailyTracking.sleep = dayStats.sleep || null;
+            }
         }
 
+        // 确保月度统计中的数据是最新的
+        if (!monthlyStats[currentMonth]) {
+            monthlyStats[currentMonth] = { dailyStats: {} };
+        }
+        if (!monthlyStats[currentMonth].dailyStats[currentDay]) {
+            monthlyStats[currentMonth].dailyStats[currentDay] = {};
+        }
+        
+        // 更新月度统计中的数据
+        const currentDayStats = monthlyStats[currentMonth].dailyStats[currentDay];
+        if (dailyTracking.wakeup) currentDayStats.wakeup = dailyTracking.wakeup;
+        if (dailyTracking.sleep) currentDayStats.sleep = dailyTracking.sleep;
+
         updateUI();
+        // 保存以确保数据同步
+        saveData();
         return true;
     } catch (error) {
         console.error('Load data error:', error);
@@ -1108,7 +1123,8 @@ function setupTrackingButtons() {
                         minute: '2-digit',
                         hour12: false
                     });
-                    dailyTracking[type] = timeStr;  // 直接保存时间字符串
+                    // 直接覆盖之前的记录
+                    dailyTracking[type] = timeStr;
                     document.getElementById(`${type}-time`).textContent = timeStr;
 
                     // 如果是起床时间且有睡眠时间，计算睡眠时长

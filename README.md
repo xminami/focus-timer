@@ -16,10 +16,10 @@ A comprehensive web-based focus timer with activity tracking, mood monitoring, a
 - 📊 Daily and monthly statistics
 
 ### Activity Tracking
-- 🌅 Wake up time tracking
-- 🌙 Sleep time tracking
-- 💪 Exercise tracking with auto-timer
-- 📚 Study tracking with auto-timer
+- 🌅 Wake up time tracking (can update anytime)
+- 🌙 Sleep time tracking (can update anytime)
+- 💪 Exercise tracking with counter
+- 📚 Study tracking with counter
 - 🔄 Auto-save feature
 - 🔁 Auto-resume after page refresh
 
@@ -31,8 +31,11 @@ A comprehensive web-based focus timer with activity tracking, mood monitoring, a
 ### Statistics & Visualization
 - 📊 Monthly focus time chart
 - 😴 Sleep duration analysis
+  - Daily sleep/wake time record
+  - Sleep duration calculation
 - 📈 Progress tracking
 - 🎯 Daily/Weekly/Monthly summary
+  - Week starts from Monday
 - 📅 Weekend highlighting in charts
 - 🎨 Color-coded focus sessions
 
@@ -55,10 +58,10 @@ A comprehensive web-based focus timer with activity tracking, mood monitoring, a
 5. Can modify task name before stopping
 
 ### Activity Tracking
-- Click sun icon to record wake-up time
-- Click moon icon to record sleep time
-- Click dumbbell to start exercise timer
-- Click book to start study timer
+- Click sun icon to update wake-up time (overwrites previous record)
+- Click moon icon to update sleep time (overwrites previous record)
+- Click dumbbell to start exercise timer and count
+- Click book to start study timer and count
 
 ### Mood Recording
 - Click mood icons to record current mood
