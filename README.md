@@ -1,11 +1,16 @@
 # Focus Timer
 
-A comprehensive web-based focus timer with activity tracking and mood monitoring. Track your focus time, daily activities, sleep schedule, and mood changes.
+A comprehensive web-based focus timer with activity tracking, mood monitoring, and data visualization. Track your focus time, daily activities, sleep schedule, and mood changes.
 
 ## Features
 
 ### Focus Timer
 - ⏱️ Precise timing with pause/resume
+- 🎨 Color-coded control buttons
+  - Green: Start
+  - Orange: Pause
+  - Blue: Resume
+  - Red: Stop
 - 📝 Optional task description
 - ✨ Auto-detect effective focus (≥25min)
 - 📊 Daily and monthly statistics
@@ -15,6 +20,8 @@ A comprehensive web-based focus timer with activity tracking and mood monitoring
 - 🌙 Sleep time tracking
 - 💪 Exercise tracking with auto-timer
 - 📚 Study tracking with auto-timer
+- 🔄 Auto-save feature
+- 🔁 Auto-resume after page refresh
 
 ### Mood Monitoring
 - 😊 Four mood states (Great, Good, Meh, Bad)
@@ -27,22 +34,24 @@ A comprehensive web-based focus timer with activity tracking and mood monitoring
 - 📈 Progress tracking
 - 🎯 Daily/Weekly/Monthly summary
 - 📅 Weekend highlighting in charts
+- 🎨 Color-coded focus sessions
 
 ### Data Management
 - 💾 Auto-save to localStorage
 - 🔄 Daily auto-reset at midnight
 - 📤 Data export
-- JSON backup
-- CSV for analysis
+  - JSON backup
+  - CSV for analysis
 - 📥 Data import
+- 🔁 Session state preservation
 
 ## Usage
 
 ### Focus Timer
 1. Enter task description (optional)
-2. Click "Start" or use activity buttons
-3. Use Pause/Resume if needed
-4. Click "Stop" to end session
+2. Click green "Start" button to begin
+3. Use orange "Pause" button to pause (turns blue for "Resume")
+4. Click red "Stop" button to end session
 5. Can modify task name before stopping
 
 ### Activity Tracking
@@ -69,9 +78,11 @@ A comprehensive web-based focus timer with activity tracking and mood monitoring
 - CSS3
 - JavaScript
 - Chart.js for visualizations
+- Material Icons for UI
 
 ### Data Storage
 - Uses browser's localStorage
+- Session state preservation
 - Daily data auto-resets at midnight
 - Monthly statistics preserved
 - Backup/restore functionality
