@@ -754,36 +754,21 @@ function updateSleepChart() {
         return date.getDay(); // 0 是周日，1-6 是周一到周六
     });
 
-    // 处理所有日期的数据，包括没有记录的日期
-    const sleepData = days.map(day => {
-        const dayStats = monthData.dailyStats[day.toString()] || {};
-        
-        // 如果没有睡眠数据，返回空数据但保留日期
-        if (!dayStats.sleep || !dayStats.wakeup) {
+    // 在处理时间数据时添加错误检查
+    const sleepData = Object.entries(monthData).map(([day, data]) => {
+        if (!data.sleep || !data.wakeup) return null;
+        try {
             return {
-                x: day,
-                y: null,
-                duration: null
+                day: parseInt(day),
+                sleep: data.sleep,
+                wakeup: data.wakeup,
+                duration: calculateDuration(data.sleep, data.wakeup)
             };
+        } catch (error) {
+            console.error('Error processing sleep data for day:', day, error);
+            return null;
         }
-        
-        let sleepTime = timeToMinutes(dayStats.sleep);
-        let wakeTime = timeToMinutes(dayStats.wakeup);
-        
-        // 调整时间以12点为基准
-        if (sleepTime < 12 * 60) sleepTime += 24 * 60;
-        if (wakeTime < 12 * 60) wakeTime += 24 * 60;
-        
-        // 计算睡眠时长（小时）
-        let duration = (wakeTime - sleepTime) / 60;
-        if (duration < 0) duration += 24;
-        
-        return {
-            x: day,
-            y: [sleepTime - 12 * 60, wakeTime - 12 * 60],
-            duration: duration
-        };
-    });
+    }).filter(data => data !== null);  // 过滤掉无效数据
 
     window.sleepChart = new Chart(ctx, {
         type: 'bar',
@@ -911,8 +896,15 @@ function updateSleepChart() {
 }
 
 function timeToMinutes(timeStr) {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours * 60 + minutes;
+    if (!timeStr) return 0;
+    try {
+        // 处理 "HH:MM" 格式
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+    } catch (error) {
+        console.error('Error parsing time:', timeStr, error);
+        return 0;
+    }
 }
 
 function exportData() {
@@ -1292,17 +1284,36 @@ function addRecordToTable(record) {
     }
 }
 
-// 计算时长的函数
+// 修改 calculateDuration 函数，添加更多错误处理
 function calculateDuration(sleepTimeStr, wakeTimeStr) {
-    const sleepTime = timeToMinutes(sleepTimeStr);
-    const wakeTime = timeToMinutes(wakeTimeStr);
+    if (!sleepTimeStr || !wakeTimeStr) {
+        console.log('Missing time values:', { sleep: sleepTimeStr, wake: wakeTimeStr });
+        return 0;
+    }
 
-    // 调整时间以12点为基准
-    if (sleepTime < 12 * 60) sleepTime += 24 * 60;
-    if (wakeTime < 12 * 60) wakeTime += 24 * 60;
+    try {
+        const sleepTime = timeToMinutes(sleepTimeStr);
+        const wakeTime = timeToMinutes(wakeTimeStr);
 
-    let duration = (wakeTime - sleepTime) / 60;  // 计算时长（小时）
-    if (duration < 0) duration += 24;  // 确保时长为正
+        // 调整时间以12点为基准
+        let adjustedSleepTime = sleepTime;
+        let adjustedWakeTime = wakeTime;
 
-    return duration;
+        if (sleepTime < 12 * 60) adjustedSleepTime += 24 * 60;
+        if (wakeTime < 12 * 60) adjustedWakeTime += 24 * 60;
+
+        let duration = (adjustedWakeTime - adjustedSleepTime) / 60;  // 计算时长（小时）
+        if (duration < 0) duration += 24;  // 确保时长为正
+
+        console.log('Duration calculation:', {
+            sleep: sleepTimeStr,
+            wake: wakeTimeStr,
+            duration: duration
+        });
+
+        return duration;
+    } catch (error) {
+        console.error('Error calculating duration:', error);
+        return 0;
+    }
 }
